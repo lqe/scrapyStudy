@@ -49,9 +49,10 @@ NEWSPIDER_MODULE = 'newsCrawlBykeyWords.spiders'
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'newsCrawlBykeyWords.middlewares.MyCustomDownloaderMiddleware': 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+        'scrapy.downloadermiddleware.useragent.UserAgentMiddleware' : None,
+        'newsCrawlBykeyWords.middlewares.downloadMiddlewares.RotateUserAgentMiddleware' :400
+    }
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -61,9 +62,10 @@ NEWSPIDER_MODULE = 'newsCrawlBykeyWords.spiders'
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'newsCrawlBykeyWords.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'newsCrawlBykeyWords.pipelines.FilterPipeline': 300,
+   'newsCrawlBykeyWords.pipelines.NewsPipeline': 500,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
