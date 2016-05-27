@@ -25,8 +25,11 @@ class NewsItem(scrapy.Item):
         fields = ["url", "title", "dateline","source","content"]
         if hasattr(kwargs['dateline'] , 'strftime'):
             kwargs['dateline'] = kwargs['dateline'].strftime('%Y-%m-%d %H:%M:%S')
+
         for field in fields:
-            news[field] = re.sub(u"[\t\r\n]+", "", kwargs[field])
+            value = kwargs[field]
+            if value:
+                news[field] = re.sub(u"[\t\r\n]+", "", value)
         news["url_md5"] = hashlib.md5(news["url"]).hexdigest()
         return news
 

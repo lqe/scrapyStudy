@@ -12,12 +12,13 @@ class RE():
     whitespace_re = re.compile(ur"\s+")
     label_re = staticmethod(lambda e: re.compile("<\s*/?\s*%s[^>]*>" % e))
     url_date_re = re.compile(
-        ur'([\./\-_]{0,1}(19|20)\d{2})[\./\-_]{0,1}(([0-3]{0,1}[0-9][\./\-_])|(\w{3,5}[\./\-_]))([0-3]{0,1}[0-9][\./\-]{0,1})?')
+            ur'([\./\-_]{0,1}(19|20)\d{2})[\./\-_]{0,1}(([0-3]{0,1}[0-9][\./\-_])|(\w{3,5}[\./\-_]))([0-3]{0,1}[0-9][\./\-]{0,1})?')
 
 
 class NewsParse(object):
     MIN_WORD_COUNT = 300
-    KEY_CHAR = set([u'、', u'，', u'。', u'记者', u'专电'])
+    KEY_LABEL = set([u'、', u'，', u'。'])
+    KEY_WORD = set([u'记者', u'专电', u'发生',u'电', u'据', u'摘要', u'讯', u'消息', u'报道'])
 
     def __init__(self, html, url):
         self.url = url
@@ -31,6 +32,7 @@ class NewsParse(object):
         self.dateline = None
         self.source = None
         self.content = None
+        self.KEY_WORD = set([i for i in NewsParse.KEY_WORD])
 
     def set_title(self, title):
         self.title = get_unicode(title)
@@ -73,9 +75,9 @@ class NewsParse(object):
         if self.content is None:
             self.get_content()
         # 正文存在的话
-        if self.content :
+        if self.content:
             for ele, weight in reversed(self.htmlSeq[:self.content_begin]):
-                if weight < 0:continue
+                if weight < 0: continue
                 self.dateline = searchTime(ele)
                 if self.dateline:
                     return self.dateline
@@ -102,7 +104,7 @@ class NewsParse(object):
             return self.content
         begin, end, sum = findGreatestSubArray([ele[1] for ele in self.htmlSeq])
         if sum < self.MIN_WORD_COUNT:
-            return ""
+            return None
         text = []
         for ele, value in self.htmlSeq[begin:end + 1]:
             if value < 0:
@@ -110,7 +112,7 @@ class NewsParse(object):
                     text.append("<br/>")
             else:
                 text.append(ele)
-        self.content_begin ,self.content_end = begin, end
+        self.content_begin, self.content_end = begin, end
         self.content = ''.join(text)
         return self.content
 
@@ -147,10 +149,13 @@ class NewsParse(object):
 
     def get_weight(self, ele):
         wight = len(ele)
-
+        # return wight
         for char in ele:
-            if char in self.KEY_CHAR:
-                wight += 500
+            if char in self.KEY_WORD:
+                self.KEY_WORD.remove(char)
+                wight += 1000
+            elif char in self.KEY_LABEL:
+                wight += 512
         return wight
 
     def clean_html(self, html):
@@ -3409,8 +3414,2731 @@ n.parentNode.insertBefore(s, n);
 <audio controls="controls" style="display: none;"></audio><div id="bsBox" class="bsBox"><div class="bsClose">X</div><div class="bsTop"><div class="bsReturn">选择其他平台 &gt;&gt;</div><span style="margin-left:15px;">分享到</span><span class="bsPlatName"></span></div><div class="bsFrameDiv"><iframe class="bShareFrame" name="bsFrame600" frameborder="0" scrolling="no" allowtransparency="true"></iframe></div><div id="bsMorePanel" style="display: none;"></div></div><iframe id="sinaads-ck-iframe" src="//d6.sina.com.cn/litong/zhitou/sinaads/src/spec/sinaads_ck.html" style="display: none;"></iframe><div class="sina-comment-tip" style="visibility: hidden; position: absolute; left: -9999px; opacity: 0;"></div><div id="ads"></div><div id="bsPanelHolder"><div id="bsPanel" style="display:none;"><div class="bsTitle"><a style="float:left;height:20px;line-height:20px;font-weight:bold;" class="bsSiteLink" target="_blank" href="http://www.bshare.cn/intro">分享到</a><a class="bsSiteLink" style="cursor:pointer;float:right;height:20px;line-height:20px;font-weight:bold;" onclick="document.getElementById('bsPanel').style.display='none';">X</a><div class="bsClear"></div></div><div class="bsClear"></div><div style="padding-left:8px;background:#fff;*height:244px;"><div style="height:47px;border-bottom:1px #ccc solid;padding:4px 0 4px 16px;margin-right:8px;_padding-left:12px;"><div class="bsRlogo" onmouseover="javascript:this.className='bsRlogoSel'" onmouseout="javascript:this.className='bsRlogo'"><a href="javascript:;" onclick="javascript:bShare.share(event,'sinaminiblog');return false;" style="text-decoration:none;line-height:120%;"><div style="cursor:pointer;width:24px;height:24px;margin:0 18px 2px;background:url(http://static.bshare.cn/frame/images//logos/m2/sinaminiblog.gif) no-repeat;"></div><div style="cursor:pointer;text-align:center;width:60px;height:16px !important;overflow:hidden;color:inherit;white-space:nowrap;line-height:120% !important">新浪微博</div></a></div><div class="bsRlogo" onmouseover="javascript:this.className='bsRlogoSel'" onmouseout="javascript:this.className='bsRlogo'"><a href="javascript:;" onclick="javascript:bShare.share(event,'weixin');return false;" style="text-decoration:none;line-height:120%;"><div style="cursor:pointer;width:24px;height:24px;margin:0 18px 2px;background:url(http://static.bshare.cn/frame/images//logos/m2/weixin.gif) no-repeat;"></div><div style="cursor:pointer;text-align:center;width:60px;height:16px !important;overflow:hidden;color:inherit;white-space:nowrap;line-height:120% !important">微信</div></a></div><div class="bsRlogo" onmouseover="javascript:this.className='bsRlogoSel'" onmouseout="javascript:this.className='bsRlogo'"><a href="javascript:;" onclick="javascript:bShare.share(event,'qzone');return false;" style="text-decoration:none;line-height:120%;"><div style="cursor:pointer;width:24px;height:24px;margin:0 18px 2px;background:url(http://static.bshare.cn/frame/images//logos/m2/qzone.gif) no-repeat;"></div><div style="cursor:pointer;text-align:center;width:60px;height:16px !important;overflow:hidden;color:inherit;white-space:nowrap;line-height:120% !important">QQ空间</div></a></div></div><div class="bsLogoLink"><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="有道笔记" onclick="javascript:bShare.share(event,'youdaonote');return false;" style="background:url(http://static.bshare.cn/frame/images//logos/s4/youdaonote.png) no-repeat;">有道笔记</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="QQ好友" onclick="javascript:bShare.share(event,'qqim');return false;" style="background:url(http://static.bshare.cn/frame/images//logos/s4/qqim.png) no-repeat;">QQ好友</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="开心网" onclick="javascript:bShare.share(event,'kaixin001');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1008px;">开心网</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="网易微博" onclick="javascript:bShare.share(event,'neteasemb');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1332px;">网易微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="百度空间" onclick="javascript:bShare.share(event,'baiduhi');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -144px;">百度空间</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="人民微博" onclick="javascript:bShare.share(event,'peoplemb');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1368px;">人民微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="南方微博" onclick="javascript:bShare.share(event,'southmb');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1818px;">南方微博</a></div></div><div class="bsLogoLink"><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="腾讯微博" onclick="javascript:bShare.share(event,'qqmb');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1512px;">腾讯微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="人人网" onclick="javascript:bShare.share(event,'renren');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1674px;">人人网</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="LinkedIn" onclick="javascript:bShare.share(event,'linkedin');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1080px;">LinkedIn</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="豆瓣网" onclick="javascript:bShare.share(event,'douban');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -540px;">豆瓣网</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="朋友网" onclick="javascript:bShare.share(event,'qqxiaoyou');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1548px;">朋友网</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="天涯" onclick="javascript:bShare.share(event,'tianya');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1890px;">天涯</a></div></div><div class="bsClear"></div></div><div style="height:20px;line-height:20px;padding:0 8px;border-top:1px solid #e8e8e8;color:#666;background:#f2f2f2;"><div class="buzzButton" style="float:left;">更多平台... <font style="font-weight:normal;">(133)</font></div><div id="bsPower" style="float:right;text-align:right;overflow:hidden;height:100%;"><a class="bsSiteLink" style="font-size:10px;vertical-align:text-bottom;line-height:24px;cursor:pointer;" href="http://www.bshare.cn" target="_blank"><span style="font-size:10px;vertical-align:text-bottom;"><span style="color:#f60;">b</span>Share</span></a></div></div></div></div></body></html>'''
 
 
+def getHtml2():
+    return '''<html><head>
+<style id="znBdcsStyle" type="text/css">.bdcs-container .bdcs-main,.bdcs-container .bdcs-main *{box-sizing:content-box;margin:0;padding:0;float:none;clear:none;overflow:hidden;white-space:nowrap;word-wrap:normal;border:0;background:0 0;width:auto;height:auto;max-width:none;min-width:none;max-height:none;min-height:none;border-radius:0;box-shadow:none;transition:none;text-align:left}.bdcs-container .bdcs-clearfix:after{content:'';display:block;clear:both;height:0}.bdcs-container .bdcs-clearfix{zoom:1}.bdcs-container .bdcs-main{overflow:visible}.bdcs-container .bdcs-search{display:block;overflow:visible;position:relative;border-style:solid}.bdcs-container .bdcs-search-form-input-wrap{display:inline-block}.bdcs-container .bdcs-search-form-input{border-width:1px;border-style:solid;display:inline-block;vertical-align:top;text-indent:5px;background-color:#fff;float:left}.bdcs-container .bdcs-search-form-input:focus{border-width:1px;border-style:solid;outline:0}.bdcs-container .bdcs-search-form-submit-wrap{display:inline-block}.bdcs-container .bdcs-search-form-submit{display:inline-block;cursor:pointer;border-width:1px;border-style:solid;vertical-align:top;text-align:center;width:50px;//_overflow:hidden}.bdcs-container .bdcs-search-form-submit-magnifier{width:45px;padding:0;text-indent:-999em;overflow:hidden;background:url(http://znsv.baidu.com/static/customer-search/component/search/magnifier-icon.png) no-repeat center center;_background:url(http://znsv.baidu.com/static/customer-search/component/search/magnifier-icon_ie6.png) no-repeat center center}div#default-searchbox .default-channel-meun{position:relative;width:75px;display:inline-block;vertical-align:middle;cursor:pointer;background:#fff;float:left;overflow:visible}div#default-searchbox .default-channel-current{border:1px solid;position:relative;width:100%;border-right:0}div#default-searchbox .default-channel-current span{margin-left:8px}div#default-searchbox .default-channel-current i{overflow:hidden;width:0;height:0;border-width:6px 6px 0;border-color:#9E9E9E #fff;border-style:solid;display:block;position:absolute;right:10px;top:11px}div.cse-default-channel-container{display:block;position:absolute;z-index:30061000000}div.cse-default-channel-container .default-channel-list{display:none;width:99%;list-style:none;background:#fff;border:1px solid #DDD;border-top:0;margin:0;padding:0}div.cse-default-channel-container .default-channel-list li{background:0 0;line-height:24px;list-style:none;display:block;padding-left:7px;cursor:pointer}div.cse-default-channel-container .default-channel-list li:hover{background:#DDD}.bdcs-container .bdcs-search-form-input-wrap{}.bdcs-container .bdcs-search-form-input-notspan{margin-left:0px;font-family:Arial,SimSun,sans-serif;color:#000000;font-size:14px;}.bdcs-container .bdcs-search-form-input .icon-nofocus{left:;right:;top:;height:;width:;}.bdcs-container .bdcs-search{width:299px;height:28px;overflow:visible;border-color:#ffffff;border-radius:0px;border-width:0px;box-shadow:none;background-color:none;}.bdcs-container .bdcs-search-form-input{border-color:#e5e5e5;margin-right:5px;width:240px;height:26px;line-height:26px;font-family:Arial,SimSun,sans-serif;color:#000000;font-size:14px;border-radius:0px;background-color:#FFFFFF;}.bdcs-container .bdcs-search-form-input:focus{border-color:#f79646;}.bdcs-container .bdcs-search-form-submit-wrap{}.bdcs-container .bdcs-search-form-submit{border-color:#e5e5e5;height:26px;width:50px;background-color:#FFFFFF;color:#333333;font-family:Arial,SimSun,sans-serif;font-size:12px;border-radius:0px;}div#default-searchbox  .default-channel-meun{width:75px;}.bdcs-container .bdcs-search-form-input{width:165px;}.bdcs-container .bdcs-search-form-submit{*height:28px;*margin-top:1px;}.bdcs-container .bdcs-search-form-submit{line-height:26px;}#bdcs-search-inline{overflow:visible;}div#default-searchbox .default-channel-current{border-radius:0px;}div#default-searchbox .default-channel-current i{top:10px;}div#default-searchbox .default-channel-current{height:26px;line-height:26px;border-color:#e5e5e5}div#default-searchbox  .default-channel-meun{border-radius:0px;width:75px}#bdcs-rec{display:none;}</style><meta charset="utf-8">
+<title>北京提倡生态葬 6.5亩骨灰生态林力争年内开建_河北新闻网</title>
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no,initial-scale=1, ">
+<meta name="applicable-device" content="pc,mobile ">
+<meta http-equiv="Cache-Control" content="no-transform ">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="edge">
+<link rel="shortcut icon" type="image/ico" href="http://www.hebnews.cn/index.ico">
+<link href="../../31970.files/images/2016base.css?20160108" rel="stylesheet" type="text/css">
+<script type="text/javascript" async="" src="http://znsv.baidu.com/customer_search/api/rs?sid=11379371077363865247&amp;plate_url=http%3A%2F%2Fworld.hebnews.cn%2F2016-03%2F30%2Fcontent_5424614.htm&amp;t=405555&amp;type=3"></script><script type="text/javascript" async="" src="http://znsv.baidu.com/customer_search/api/js?sid=11379371077363865247&amp;plate_url=http%3A%2F%2Fworld.hebnews.cn%2F2016-03%2F30%2Fcontent_5424614.htm&amp;t=405555"></script><script type="text/javascript" src="../../66613.files/js/jquery1.42.min.js"></script>
+<script type="text/javascript" src="http://cbjs.baidu.com/js/m.js"></script>
+<script src="http://bdimg.share.baidu.com/static/api/js/share.js?cdnversion=405553"></script><script src="http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion=405553"></script><style type="text/css">#yddContainer{display:block;font-family:Microsoft YaHei;position:relative;width:100%;height:100%;top:-4px;left:-4px;font-size:12px;border:1px solid}#yddTop{display:block;height:22px}#yddTopBorderlr{display:block;position:static;height:17px;padding:2px 28px;line-height:17px;font-size:12px;color:#5079bb;font-weight:bold;border-style:none solid;border-width:1px}#yddTopBorderlr .ydd-sp{position:absolute;top:2px;height:0;overflow:hidden}.ydd-icon{left:5px;width:17px;padding:0px 0px 0px 0px;padding-top:17px;background-position:-16px -44px}.ydd-close{right:5px;width:16px;padding-top:16px;background-position:left -44px}#yddKeyTitle{float:left;text-decoration:none}#yddMiddle{display:block;margin-bottom:10px}.ydd-tabs{display:block;margin:5px 0;padding:0 5px;height:18px;border-bottom:1px solid}.ydd-tab{display:block;float:left;height:18px;margin:0 5px -1px 0;padding:0 4px;line-height:18px;border:1px solid;border-bottom:none}.ydd-trans-container{display:block;line-height:160%}.ydd-trans-container a{text-decoration:none;}#yddBottom{position:absolute;bottom:0;left:0;width:100%;height:22px;line-height:22px;overflow:hidden;background-position:left -22px}.ydd-padding010{padding:0 10px}#yddWrapper{color:#252525;z-index:10001;background:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ab20.png);}#yddContainer{background:#fff;border-color:#4b7598}#yddTopBorderlr{border-color:#f0f8fc}#yddWrapper .ydd-sp{background-image:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ydd-sprite.png)}#yddWrapper a,#yddWrapper a:hover,#yddWrapper a:visited{color:#50799b}#yddWrapper .ydd-tabs{color:#959595}.ydd-tabs,.ydd-tab{background:#fff;border-color:#d5e7f3}#yddBottom{color:#363636}#yddWrapper{min-width:250px;max-width:400px;}</style><link rel="stylesheet" href="http://bdimg.share.baidu.com/static/api/css/share_style0_16.css?v=6aba13f0.css"></head>
+<body id="header"><div id="BAIDU_DUP_fp_wrapper" style="position: absolute; left: -1px; bottom: -1px; z-index: 0; width: 0px; height: 0px; overflow: hidden; visibility: hidden; display: none;"><iframe id="BAIDU_DUP_fp_iframe" src="http://pos.baidu.com/wh/o.htm?ltr=" style="width: 0px; height: 0px; visibility: hidden; display: none;"></iframe></div>
+<div class="page_nav">
+	<div class="m_center page_nav_box">
+
+        <ul>
+        	<li><a href="http://www.hebnews.cn">河北新闻网首页</a></li>
+        	<li><a href="http://hebei.hebnews.cn">河北</a></li>
+        	<li><a href="http://gov.hebnews.cn">政务</a></li>
+        	<li><a href="http://comment.hebnews.cn">时评</a></li>
+        	<li><a href="../../">国内国际</a></li>
+        	<li><a href="http://hebei.hebnews.cn/node_116.htm">原创</a></li>
+        	<li><a href="http://bbs.hebnews.cn">论坛</a></li>
+        	<li><a href="http://v.hebnews.cn">视频</a></li>
+        	<li><a href="http://ent.hebnews.cn">娱乐</a></li>
+        	<li><a href="http://finance.hebnews.cn">财经</a></li>
+        	<li><a href="http://zhuanti.hebnews.cn">专题</a></li>
+        	<li><a href="http://bbs.hebnews.cn/smbk/">博客</a></li>
+        	<li><a href="http://photo.hebnews.cn">图库</a></li>
+        	<li><a href="http://house.hebnews.cn">房产</a></li>
+        	<li><a href="http://auto.hebnews.cn">汽车</a></li>
+        	<li><a href="http://edu.hebnews.cn">教育</a></li>
+        	<li><a href="http://tousu.hebnews.cn">投诉</a></li>
+        </ul>
+    </div>
+    <div class=" ad-top">
+	<script type="text/javascript">BAIDU_CLB_fillSlot("382815");</script><div id="BAIDU_SSP__wrapper_382815_0"><iframe id="iframe382815_0" onload="BAIDU_SSP_renderFrame('382815_0', this);" src="about:blank" width="1000" height="85" align="center,center" vspace="0" hspace="0" marginwidth="0" marginheight="0" scrolling="no" frameborder="0" style="border:0; vertical-align:bottom;margin:0;" allowtransparency="true"></iframe></div><script charset="utf-8" src="http://pos.baidu.com/ncom?di=382815&amp;dri=0&amp;dis=0&amp;dai=1&amp;ps=54x0&amp;dcb=BAIDU_SSP_define&amp;dtm=BAIDU_DUP_SETJSONADSLOT&amp;dvi=0.0&amp;dci=-1&amp;dpt=none&amp;tsr=0&amp;tpr=1459997636489&amp;ti=%E5%8C%97%E4%BA%AC%E6%8F%90%E5%80%A1%E7%94%9F%E6%80%81%E8%91%AC%206.5%E4%BA%A9%E9%AA%A8%E7%81%B0%E7%94%9F%E6%80%81%E6%9E%97%E5%8A%9B%E4%BA%89%E5%B9%B4%E5%86%85%E5%BC%80%E5%BB%BA_%E6%B2%B3%E5%8C%97%E6%96%B0%E9%97%BB%E7%BD%91&amp;ari=1&amp;dbv=2&amp;drs=1&amp;pcs=996x592&amp;pss=996x220&amp;cfv=0&amp;cpl=5&amp;chi=8&amp;cce=true&amp;cec=UTF-8&amp;tlm=1459997636&amp;ltu=http%3A%2F%2Fworld.hebnews.cn%2F2016-03%2F30%2Fcontent_5424614.htm&amp;ecd=1&amp;psr=1280x800&amp;par=1280x731&amp;pis=-1x-1&amp;ccd=24&amp;cja=false&amp;cmi=7&amp;col=zh-CN&amp;cdo=-1&amp;tcn=1459997636"></script>
+    </div>
+    <div class="m_center" style="margin-top:20px">
+    	<div class="content_main">
+        	<div class="path"><div class="channel"></div><div class="crumb"><a href="../../index.htm" target="_blank" class="">国内国际</a><font class="">&gt;&gt;</font><a href="../../node_152.htm" target="_blank" class="">社会</a></div></div>
+        </div>
+        <div class="content_side">
+        	<div class="side_search">
+        	 <div class="hebnews_search_box">
+        	<!--<form onSubmit="per_submit();" method="post" name="form1" action="http://search.hebnews.cn:8070/servlet/SearchServlet.do">
+            <input name="op" value="single" type="hidden"/>
+            <input name="sort" value="date" type="hidden"/>
+            <input name="siteID" type="hidden"/>
+            <input class="page_search_text" name="contentKey" id="contentKey"  value="新闻搜索" onFocus="if(this.value=='新闻搜索')this.value='';" onBlur="if(this.value=='')this.value='新闻搜索';"/>
+            <input class="page_search_buttom" name="submit" value=" " type="submit"/>
+            </form>-->
+            <script type="text/javascript">(function(){document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=11379371077363865247' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();
+			</script><div id="bdcs"><div class="bdcs-container"><meta http-equiv="x-ua-compatible" content="IE=9">   <!-- 嵌入式 -->  <div class="bdcs-main bdcs-clearfix" id="default-searchbox">      <div class="bdcs-search bdcs-clearfix" id="bdcs-search-inline">          <form action="http://s.hebnews.cn/cse/search" method="get" target="_blank" class="bdcs-search-form" autocomplete="off" id="bdcs-search-form">              <input type="hidden" name="s" value="11379371077363865247">              <input type="hidden" name="entry" value="1">                                                                                      <div class="default-channel-meun" id="default-channel-meun">                  <div class="default-channel-current"><span id="default-channel-curr">综合</span><i></i></div>                    <input type="hidden" name="nsid" value="1" id="default-channel-nsid">              </div><input type="text" name="q" class="bdcs-search-form-input" id="bdcs-search-form-input" placeholder="请输入关键词" style="height: 26px; line-height: 26px;">              <input type="submit" class="bdcs-search-form-submit bdcs-search-form-submit-magnifier" id="bdcs-search-form-submit" value="搜索">                       </form>      </div>                  </div>                           </div></div>
+
+        </div>
+
+<script>
+	with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+        </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="m_center">
+	<div class="content_main">
+
+      <h1 class="title">北京提倡生态葬 6.5亩骨灰生态林力争年内开建</h1>
+      <div class="source">2016-03-30 15:46:09　	来源：北京晚报　责任编辑：王艳荣
+
+    </div>
+<div class="min-zy">根据近日印发的北京市“十三五”殡葬事业发展规划，到2020年，本市有墓地的行政区都将建设一处绿色生态墓地示范园，骨灰安葬生态化比例将达到50%。</div>      <div class="text">
+<!--enpproperty <articleid>5424614</articleid><date>2016-03-30 15:46:09.0</date><author></author><title>北京提倡生态葬 6.5亩骨灰生态林力争年内开建</title><keyword></keyword><subtitle></subtitle><introtitle></introtitle><siteid>2</siteid><nodeid>152</nodeid><nodename>社会</nodename><nodesearchname></nodesearchname><picurl>http://world.hebnews.cn/attachement/jpg/site2/20160330/4437e63707e91865c8f351.jpg</picurl>/enpproperty--><!--enpcontent--><!--enpcontent--><p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;<strong>让生命栖息绿树花土</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify"><strong>&nbsp;&nbsp;&nbsp;&nbsp;6.5亩骨灰生态林力争年内开建</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;如果说入土为安是对传统文化的坚守，那么把生命终结的最后颗粒撒向花土、沉入绿地，或许正是让逝者回归自然的重生，而非仅仅是土地寸土寸金下的退让。根据近日印发的北京市“十三五”殡葬事业发展规划，到2020年，本市有墓地的行政区都将建设一处绿色生态墓地示范园，骨灰安葬生态化比例将达到50%。</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;<strong>花葬</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify"><strong>&nbsp;&nbsp;&nbsp;&nbsp;即使没人祭扫 照样生机勃勃</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify"><strong>&nbsp;&nbsp;&nbsp;&nbsp;地点：福田公墓</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: center" align="center"><a href="content_5424614_2.htm" target="_self"><img id="6682448" title="" border="0" align="默认" src="../../attachement/jpg/site2/20160330/4437e63707e91865c8f351.jpg" sourcedescription="编辑提供的本地文件" sourcename="本地文件"></a></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: center" align="center">花葬</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;没有成束的鲜花，不用漆笔描碑，只是默立鞠躬后，轻轻地放上一枝菊花。上周日早晨8点，田君女士一家三口来到紧邻西南五环的福田公墓祭奠逝去的母亲。不过，与多数人在传统墓碑前摆放鲜花、寒食等各种祭品不同，她的手中只有一枝简单的菊花。一年前，她将母亲的骨灰安放在了福田公墓“福缘阁”中繁花似锦的花坛，之后的祭扫，也一直以这样简单安静的方式进行。</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;“妈妈在生前就嘱咐我们，她百年之后不用传统椅子坟，而要用树葬或者花葬。”田君说，由于母亲文化水平不太高，当时有这样的想法很出人意料，但她的理由很有说服力。“妈妈只有我一个女儿，后来我们家也是独生子女，而在她病重的时候，我女儿正好在国外留学，她觉得传统的椅子坟必须得每年有人去扫墓，如果没人管会很难看，但是花葬、树葬不一样，即使没人祭扫，也生机勃勃，为了不给后代添麻烦，她选择了这种方式。”</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;作为北京市惟一被评为2014年民政部首批“全国生态文明示范墓园”的福田公墓，138亩的面积上近千棵白皮松、华山松、云杉、桧柏等树木四季常青，每到春季，百亩桃园盛开绽放，再搭配玉兰、榆叶梅、黄杨、月季等近万株花木，整个墓地更像是一个大公园，而福缘阁就是福田公墓特有的一个花坛葬区。</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;记者看到，每组葬区以一个花坛为主，中间是高大的常青绿树，花坛内种满了鸢尾、雏菊等花卉。在花坛外侧，以印度红花岗岩为原料的石壁被平均分成多个小区域，每块石材高60厘米，宽40厘米，中部预留有两个直径14厘米的孔穴，用于安放骨灰，顶部则配有莲花装饰，骨灰安放其中后，可以在外侧花岗岩上留下姓名和生卒年月，这种可安放两份骨灰的花坛葬价格为9800元。</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;“公墓里的树葬、花葬、立体骨灰墙等生态安葬方式这两年增长很快，总量已经超过了全部业务量的50%。”工作人员告诉记者，今年1月到3月，家属选择办理节地生态业务的有66份，而选择传统墓碑的是61份，生态葬超过了传统葬。</p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;<strong>&nbsp;服务</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify"><strong>&nbsp;&nbsp;&nbsp;&nbsp;景观撒散区</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify"><strong>&nbsp;&nbsp;&nbsp;&nbsp;可免费存放骨灰</strong></p>
+<p style="TEXT-JUSTIFY: distribute; TEXT-ALIGN: justify" align="justify">&nbsp;&nbsp;&nbsp;&nbsp;“今年，福田还被北京市民政局确定为开展骨灰景观撒散试点单位之一，建成后家属可以免费安放逝者骨灰。”工作人员告诉记者，规划中的景观撒散区位于福缘阁最南侧，共两块长方形区域，面积为200平方米。“争取在今年内能够建成，到时候从远处看这两个区域就是盆景造型，栽种有龙爪槐、松树、柏树等树木，地下是一层鲜花，撒放区内逝者骨灰直接撒散到土壤里，外侧不立碑留名，地下不保留任何骨灰设施，几年后，逝者将与绿树花土融为一体。”</p>
+<!--/enpcontent--><div width="100%" id="displaypagenum"><p></p><center> <span>1</span> <a href="content_5424614_2.htm" class="page-Article">2</a> <a href="content_5424614_3.htm" class="page-Article">3</a> <a href="content_5424614_2.htm" class="nextpage">下一页</a> <a href="content_5424614_3.htm" class="nextpage">尾页</a></center><p></p></div><!--/enpcontent-->
+      </div>
+
+        <div class="feed">
+        	<h3 class="mod_title">相关新闻</h3>
+
+<div class="feed-item">        <h2>           <a href="http://hebei.hebnews.cn/2016-03/27/content_5417235.htm" target="_blank"> 省民政厅通知要求做好清明祭扫工作 推行生态安葬</a>        </h2>        <div class="feed-time">           2016-03-27 08:42:15        </div><div class="cl"></div>       <p class="feed-txt">清明节即将来临。日前，省民政厅就做好清明祭扫工作发出通知，要求倡导移风易俗，推行文明祭扫生态安葬。通知要求，要充分发挥殡葬服务机构和城乡社区的平台作用，积极开展“鲜花替代烧纸”“丝带寄托哀思”等活动，组织社区公祭、集体共祭等现代追思活动，组织祭先烈、敬先贤等各种缅怀仪式，大力推广鲜花祭扫、植树祭扫、网络祭扫等文明祭扫方式，培育绿色文明殡葬理念。</p>     </div><div class="feed-item">        <h2>           <a href="http://sjz.hebnews.cn/2015-04/07/content_4683591.htm" target="_blank"> 石家庄：树葬花坛葬集体公益生态安葬获逝者亲属肯定</a>        </h2>        <div class="feed-time">           2015-04-07 23:33:28        </div><div class="cl"></div>       <p class="feed-txt">为倡导生态绿色、文明节俭殡葬祭祀新风尚，清明节当天，市殡葬管理处、市殡葬协会、平山县古中山陵园等单位联合举办了2015年集体公益生态葬暨大型公祭活动，对12位逝者进行了公益生态安葬。古中山陵园的花坛葬以及在海葬纪念碑上镌刻逝者姓名都是常年免费开放，树葬则要收取1000余元的费用。</p>     </div><div class="feed-item">        <h2>           <a href="http://handan.hebnews.cn/2015-02/05/content_4531845.htm" target="_blank"> 邯郸发布改革殡葬习俗倡议书 依法火葬生态安葬</a>        </h2>        <div class="feed-time">           2015-02-05 11:28:01        </div><div class="cl"></div>       <p class="feed-txt">为深入贯彻落实中共邯郸市委办公厅、邯郸市人民政府办公厅《关于发挥党员干部带头作用全面深化殡葬改革的意见》，引领广大干部群众自觉遵守火化政策，实行生态安葬，履行文明低碳祭祀，减轻群众丧葬负担，推动我市殡葬改革深入发展，提出如下倡议：</p>     </div><div class="feed-item">        <h2>           <a href="../../2013-03/01/content_3118572.htm" target="_blank"> 民政部鼓励生态安葬骨灰 海葬树葬等或政府买单</a>        </h2>        <div class="feed-time">           2013-03-01 08:18:11        </div><div class="cl"></div>       <p class="feed-txt">民政部称，将探索把告别厅租用、骨灰生态葬法等纳入基本服务项目范畴，这也意味着骨灰生态葬法将有望由政府来买单。鼓励经营性公墓开辟生态公益墓区，提供免费或者低价骨灰安葬服务，引导群众摒弃硬质墓穴和墓志等。</p>     </div>
+
+    </div>
+<div class="hot-news">
+	<div class="feed" id="xgss">
+        	<h3 class="mod_title">热门推荐</h3>
+
+    <div style="margin-top:10px; margin-left:-5px"><script type="text/javascript">(function(){document.write(unescape('%3Cdiv id="bdcsFrameTitleBox"%3E%3C/div%3E'));var bdcs = document.createElement("script");bdcs.type = "text/javascript";bdcs.async = true;bdcs.src = "http://znsv.baidu.com/customer_search/api/rs?sid=11379371077363865247" + "&plate_url=" + encodeURIComponent(window.location.href) + "&t=" + Math.ceil(new Date()/3600000) + "&type=3";var s = document.getElementsByTagName("script")[0];s.parentNode.insertBefore(bdcs, s);})();
+	</script><div id="bdcsFrameTitleBox" style="width: 610px; height: auto;"><iframe name="bdcsTitleFrame" id="bdcsTitleFrame" src="http://s.hebnews.cn/cse/search?s=11379371077363865247&amp;loc=http%3A%2F%2Fworld.hebnews.cn%2F2016-03%2F30%2Fcontent_5424614.htm&amp;width=610&amp;rec=1&amp;ht=3&amp;trec=1&amp;pn=12&amp;qfrom=4&amp;q=%E5%8C%97%E4%BA%AC%E6%8F%90%E5%80%A1%E7%94%9F%E6%80%81%E8%91%AC%206.5%E4%BA%A9%E9%AA%A8%E7%81%B0%E7%94%9F%E6%80%81%E6%9E%97%E5%8A%9B%E4%BA%89%E5%B9%B4%E5%86%85%E5%BC%80%E5%BB%BA_%E6%B2%B3%E5%8C%97%E6%96%B0%E9%97%BB%E7%BD%91" frameborder="0" width="100%" height="138px" marginwidth="0" marginheight="0" hspace="0" vspace="0" allowtransparency="true" scrolling="no"></iframe></div>
+    </div>
+    </div>
+</div>
+<div class="photo">
+        	<h3 class="mod_title" style="margin-bottom:10px">精彩图库</h3><div class="tv_box"><a href="http://photo.hebnews.cn/2016-03/30/content_5423751.htm" target="_blank"><img src="../../attachement/jpg/site2/20160330/b8ca3a7bf9831865854804.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://photo.hebnews.cn/2016-03/30/content_5423751.htm" target="_blank">朱孝天间接承认已婚</a></span></div><div class="tv_box"><a href="http://photo.hebnews.cn/2016-03/30/content_5423729.htm" target="_blank"><img src="../../attachement/jpg/site2/20160330/b8ca3a7bf983186584b300.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://photo.hebnews.cn/2016-03/30/content_5423729.htm" target="_blank">招空乘旗袍美女面试</a></span></div><div class="tv_box"><a href="http://photo.hebnews.cn/2016-03/30/content_5423724.htm" target="_blank"><img src="../../attachement/jpg/site2/20160330/b8ca3a7bf9831865844259.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://photo.hebnews.cn/2016-03/30/content_5423724.htm" target="_blank">全球水下摄影大赛</a></span></div><div class="tv_box"><a href="http://photo.hebnews.cn/2016-03/30/content_5423676.htm" target="_blank"><img src="../../attachement/jpg/site2/20160330/b8ca3a7bf9831865822933.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://photo.hebnews.cn/2016-03/30/content_5423676.htm" target="_blank">刘诗诗诠释活力girl</a></span></div>
+</div>
+
+     <script type="text/javascript">  document.writeln(" <div class=\"baoliao\">想爆料？请拨打新闻热线0311-67563366，登录河北新闻网新浪微博（<a href=\"http://weibo.com/hebnews2012\" rel=\"nofollow\" style=\"text-decoration:underline\" target=\"_blank\">@河北新闻网官方</a>）或通过投稿邮箱（hbrbwgk@sina.com）提供新闻线索；时评稿件请投kangkaige2010@126.com,或直接加慷慨歌Q群314081840。</div>");
+       </script> <div class="baoliao">想爆料？请拨打新闻热线0311-67563366，登录河北新闻网新浪微博（<a href="http://weibo.com/hebnews2012" rel="nofollow" style="text-decoration:underline" target="_blank">@河北新闻网官方</a>）或通过投稿邮箱（hbrbwgk@sina.com）提供新闻线索；时评稿件请投kangkaige2010@126.com,或直接加慷慨歌Q群314081840。</div>
+
+  </div>
+	<div class="content_side undis">
+
+
+<div class="ad-box"><script type="text/javascript">BAIDU_CLB_fillSlot("1030513");</script><div id="BAIDU_SSP__wrapper_1030513_0"></div><script charset="utf-8" src="http://pos.baidu.com/ncom?di=1030513&amp;dri=0&amp;dis=0&amp;dai=2&amp;ps=220x700&amp;dcb=BAIDU_SSP_define&amp;dtm=BAIDU_DUP_SETJSONADSLOT&amp;dvi=0.0&amp;dci=-1&amp;dpt=none&amp;tsr=0&amp;tpr=1459997636489&amp;ti=%E5%8C%97%E4%BA%AC%E6%8F%90%E5%80%A1%E7%94%9F%E6%80%81%E8%91%AC%206.5%E4%BA%A9%E9%AA%A8%E7%81%B0%E7%94%9F%E6%80%81%E6%9E%97%E5%8A%9B%E4%BA%89%E5%B9%B4%E5%86%85%E5%BC%80%E5%BB%BA_%E6%B2%B3%E5%8C%97%E6%96%B0%E9%97%BB%E7%BD%91&amp;ari=1&amp;dbv=2&amp;drs=1&amp;pcs=981x577&amp;pss=1000x3285&amp;cfv=0&amp;cpl=5&amp;chi=8&amp;cce=true&amp;cec=UTF-8&amp;tlm=1459997636&amp;ltu=http%3A%2F%2Fworld.hebnews.cn%2F2016-03%2F30%2Fcontent_5424614.htm&amp;ecd=1&amp;psr=1280x800&amp;par=1280x731&amp;pis=-1x-1&amp;ccd=24&amp;cja=false&amp;cmi=7&amp;col=zh-CN&amp;cdo=-1&amp;tcn=1459997637"></script><script type="text/javascript">BAIDU_CLB_SLOT_ID = "1029661";</script>
+<script type="text/javascript" src="http://cbjs.baidu.com/js/o.js"></script><div id="BAIDU_SSP__wrapper_1029661_0"><iframe id="iframe1029661_0" onload="BAIDU_SSP_renderFrame('1029661_0', this);" src="about:blank" width="300" height="250" align="center,center" vspace="0" hspace="0" marginwidth="0" marginheight="0" scrolling="no" frameborder="0" style="border:0; vertical-align:bottom;margin:0;" allowtransparency="true"></iframe></div><script charset="utf-8" src="http://pos.baidu.com/ncom?di=1029661&amp;dri=0&amp;dis=0&amp;dai=3&amp;ps=220x700&amp;dcb=BAIDU_SSP_define&amp;dtm=BAIDU_DUP_SETJSONADSLOT&amp;dvi=0.0&amp;dci=-1&amp;dpt=none&amp;tsr=0&amp;tpr=1459997636489&amp;ti=%E5%8C%97%E4%BA%AC%E6%8F%90%E5%80%A1%E7%94%9F%E6%80%81%E8%91%AC%206.5%E4%BA%A9%E9%AA%A8%E7%81%B0%E7%94%9F%E6%80%81%E6%9E%97%E5%8A%9B%E4%BA%89%E5%B9%B4%E5%86%85%E5%BC%80%E5%BB%BA_%E6%B2%B3%E5%8C%97%E6%96%B0%E9%97%BB%E7%BD%91&amp;ari=1&amp;dbv=2&amp;drs=1&amp;pcs=981x577&amp;pss=1000x3438&amp;cfv=0&amp;cpl=5&amp;chi=8&amp;cce=true&amp;cec=UTF-8&amp;tlm=1459997637&amp;ltu=http%3A%2F%2Fworld.hebnews.cn%2F2016-03%2F30%2Fcontent_5424614.htm&amp;ecd=1&amp;psr=1280x800&amp;par=1280x731&amp;pis=-1x-1&amp;ccd=24&amp;cja=false&amp;cmi=7&amp;col=zh-CN&amp;cdo=-1&amp;tcn=1459997637"></script></div>
+        <div class="side-box undis">
+        	<div class="nav_side">品牌栏目</div>
+            <div class="jhtuijian"><a href="http://zhuanti.hebnews.cn/kanba/160329.htm" target="_blank"><img src="../../attachement/jpg/site2/20160329/003018a0f0e1186482f707.jpg" border="0"></a>            	<span><a href="http://zhuanti.hebnews.cn/kanba/160329.htm" target="_blank">话题：文明标语大家侃</a></span><p>文明社会拼创意，期待您提供有意思、接地气的文明标语。</p>            </div><div class="jhtuijian"><a href="http://comment.hebnews.cn/2016-03/28/content_5419234.htm" target="_blank"><img src="../../attachement/jpg/site2/20160328/e0915373bc0018635cd501.jpg" border="0"></a>            	<span><a href="http://comment.hebnews.cn/2016-03/28/content_5419234.htm" target="_blank">评论:壮士断腕 改革创新</a></span><p>面对供给侧结构性改革，河北责任重大。</p>            </div><div class="jhtuijian"><a href="http://hui.hebnews.cn/2016-03/29/content_5421579.htm" target="_blank"><img src="../../attachement/jpg/site2/20160329/6c626d0159371864748528.jpg" border="0"></a>            	<span><a href="http://hui.hebnews.cn/2016-03/29/content_5421579.htm" target="_blank">数读：驾考新规15大变化</a></span><p>新法规关系千万驾驶人切身利益，15大变化要特别留意。</p>            </div><div class="jhtuijian"><a href="http://tousu.hebnews.cn/2016-03/24/content_5413376.htm" target="_blank"><img src="../../attachement/jpg/site2/20160229/b8ca3a789aed183ddf0803.jpg" border="0"></a>            	<span><a href="http://tousu.hebnews.cn/2016-03/24/content_5413376.htm" target="_blank">理政：发展农村电商<br></a></span><p>2016年底，全省将实现县域农村电子商务体系全覆盖。</p>            </div>
+
+
+        </div>
+
+        <div class="side-box undis" style="margin-bottom:1px; padding-bottom:1px">
+        	<div class="nav_side">娱乐热图</div>
+                 <div class="hot_pic_box">
+                   <div class="tv_box"><a href="http://ent.hebnews.cn/2016-03/29/content_5420284.htm" target="_blank"><img src="../../attachement/jpg/site2/20160329/6c626d005cfe1864751b1d.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://ent.hebnews.cn/2016-03/29/content_5420284.htm" target="_blank">郑爽胡彦斌分手</a></span></div><div class="tv_box"><a href="http://ent.hebnews.cn/2016-03/29/content_5420442.htm" target="_blank"><img src="../../attachement/jpg/site2/20160329/6c626d005cfe186474ba1c.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://ent.hebnews.cn/2016-03/29/content_5420442.htm" target="_blank">包贝尔夫妻接机</a></span></div><div class="tv_box"><a href="http://ent.hebnews.cn/2016-03/28/content_5419185.htm" target="_blank"><img src="../../attachement/jpg/site2/20160328/6c626d005cfe1863357404.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://ent.hebnews.cn/2016-03/28/content_5419185.htm" target="_blank">撒贝宁李白领证</a></span></div><div class="tv_box"><a href="http://ent.hebnews.cn/2016-03/28/content_5419720.htm" target="_blank"><img src="../../attachement/jpg/site2/20160328/6c626d005cfe1863352303.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://ent.hebnews.cn/2016-03/28/content_5419720.htm" target="_blank">国产八大花美男</a></span></div>
+          </div>
+        </div>
+
+		<div class="side-box undis">
+               	<div class="nav_side ">新闻排行</div>
+                <iframe src="http://www.hebnews.cn/top10/top10-2.html" width="100%" height="345" frameborder="0" scrolling="no" style="background:#fff; margin-top:10px"></iframe>
+        </div>
+        <div class="side-box undis" style="margin-bottom:1px;">
+        	<div class="nav_side">论坛热帖</div>
+                 <div class="hot_pic_box">
+                   <div class="tv_box"><a href="http://bbs.hebnews.cn/thread-6905205-1-1.html" target="_blank"><img src="../../attachement/jpg/site2/20160329/003018a0f0e11864882e11.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://bbs.hebnews.cn/thread-6905205-1-1.html" target="_blank">Baby是素颜女神？</a></span></div><div class="tv_box"><a href="http://bbs.hebnews.cn/thread-6905211-1-1.html" target="_blank"><img src="../../attachement/jpg/site2/20160329/003018a0f0e1186487dc10.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://bbs.hebnews.cn/thread-6905211-1-1.html" target="_blank">盘点张馨予前6任男友</a></span></div><div class="tv_box"><a href="http://bbs.hebnews.cn/thread-6905268-1-1.html" target="_blank"><img src="../../attachement/jpg/site2/20160329/003018a0f0e1186487a90f.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://bbs.hebnews.cn/thread-6905268-1-1.html" target="_blank">雪莉自拍画面太“污”</a></span></div><div class="tv_box"><a href="http://bbs.hebnews.cn/thread-6905199-1-1.html" target="_blank"><img src="../../attachement/jpg/site2/20160329/003018a0f0e11864876b0e.jpg" border="0"></a><cite class="bg"></cite><span class="txt"><a href="http://bbs.hebnews.cn/thread-6905199-1-1.html" target="_blank">蛇精男刘梓晨被包养</a></span></div>
+          </div>
+        </div>
+		<div class="">
+
+
+           <iframe src="http://www.hebnews.cn/rss/node_113002.htm" width="100%" height="240" frameborder="0" scrolling="no"></iframe>
+
+        </div>
+  </div>
+</div><div class="cse-default-channel-container" style="width: 75px;"><ul class="default-channel-list" id="default-channel-list"><li data-id="1">综合</li><li data-id="2">河北</li></ul></div>
+
+<div class="m_center footer_nav">
+<a href="http://sjz.hebnews.cn/" target="_blank">石家庄新闻</a>
+<a href="http://handan.hebnews.cn/" target="_blank">邯郸新闻</a>
+<a href="http://bd.hebnews.cn/" target="_blank">保定新闻</a>
+<a href="http://zjk.hebnews.cn/" target="_blank">张家口新闻</a>
+<a href="http://cd.hebnews.cn/" target="_blank">承德新闻</a>
+<a href="http://ts.hebnews.cn/" target="_blank">唐山新闻</a>
+<a href="http://qhd.hebnews.cn/" target="_blank">秦皇岛新闻</a>
+<a href="http://lf.hebnews.cn/" target="_blank">廊坊新闻</a>
+<a href="http://hs.hebnews.cn/" target="_blank">衡水新闻</a>
+<a href="http://hebei.hebnews.cn/node_135.htm" target="_blank">沧州新闻</a>
+<a href="http://hebei.hebnews.cn/node_136.htm" target="_blank">邢台新闻</a>
+<a href="http://hebei.hebnews.cn/node_94522.htm" target="_blank">辛集新闻</a>
+<a href="http://hebei.hebnews.cn/node_94523.htm" target="_blank">定州新闻</a>
+<a href="http://nongmin.hebnews.cn" target="_blank">河北农民报</a>
+
+</div>
+
+
+
+
+
+
+<div class="foottxt">
+	<div class="m_center">
+        <div class="footlist">
+<ul>
+<li><a href="http://help.hebnews.cn/index.html" rel="nofollow" target="_blank">关于我们</a>| </li>
+<li><a href="http://help.hebnews.cn/bqsm.html" rel="nofollow" target="_blank">版权声明</a>| </li>
+<li><a href="http://help.hebnews.cn/fwtk.html" rel="nofollow" target="_blank">服务条款</a>| </li>
+<li><a href="http://dynamic.hebnews.cn/node_7660.htm" rel="nofollow" target="_blank">广告业务</a>| </li>
+<li><a href="http://help.hebnews.cn/sxsq.html" rel="nofollow" target="_blank">实习申请</a>| </li>
+<li><a href="http://help.hebnews.cn/wstg.html" rel="nofollow" target="_blank">网上投稿</a>| </li>
+<li><a href="http://help.hebnews.cn/xwrx.html" rel="nofollow" target="_blank">新闻热线</a>| </li>
+<li><a href="http://www.hebnews.cn/sitemap.htm" target="_blank">网站地图</a> </li></ul></div>
+<div class="foottxt">
+<li>河北新闻网版权所有 本站点信息未经允许不得复制或镜像  法律顾问：<a title="" href="http://zhuanti.hebnews.cn/2012/node_41101.htm" rel="nofollow" target="_blank">河北球衡律师事务所</a> <a title="" href="http://zhuanti.hebnews.cn/2012/node_41103.htm" rel="nofollow" target="_blank">杨建国</a> </li>
+<li class="dis"><a href="http://www.hebnews.cn/" target="_blank">www.hebnews.cn</a> copyright © 2000 - 2016 </li>
+<li>新闻热线:0311-67563366 广告热线:0311-67562966 新闻投诉:0311-67562994 </li>
+<li>冀ICP备 09047539号-1 | 互联网新闻信息服务许可证编号:1312006002 </li>
+<li>广播电视节目制作经营许可证（冀）字第101号|信息网络传播视听节目许可证0311618号 </li>
+<li style="HEIGHT: 54px">
+<a title="河北互联网违法和不良信息举报" href="http://hbjubao.hebei.com.cn/" rel="nofollow" target="_blank"><img src="http://www.hebnews.cn/attachement/jpg/site2/20141212/f8b156a3fa6615f4a1861d.jpg"></a>
+<a title="经营性网站备案信息" href="http://www.miibeian.gov.cn/" rel="nofollow" target="_blank"><img src="http://www.hebnews.cn/attachement/gif/site2/20120823/001aa0c3d91f119fcd371f.gif"></a>
+<a title="不良信息举报中心" href="http://www.12377.cn/" rel="nofollow" target="_blank"><img src="http://www.hebnews.cn/72950.files/images/12377_2.jpg"></a>
+<a title="新闻记者证管核系统" href="http://press.gapp.gov.cn/" rel="nofollow" target="_blank"><img src="http://www.hebnews.cn/attachement/gif/site2/20120823/001aa0c3d91f119fcd3721.gif"></a>
+</li></div>
+    </div>
+</div>
+
+<div id="tbox" style="display:none">
+
+	<div id="sidenav">
+        <a id="zhengwu1" class="sidenav_zhengwu" target="_blank" href="http://www.hebnews.cn/"></a>
+        <a id="caijing1" class="sidenav_caijing" target="_blank" href="http://zhuanti.hebnews.cn/2015/node_112882.htm"></a>
+        <a id="jiankang1" class="sidenav_jiankang" target="_self"></a>
+        <a id="jiaoyu1" class="sidenav_jiaoyu" target="_self" href="#xgss"></a>
+
+    </div>
+<a id="gotop" href="#header" style="display: inline;"></a></div>
+
+    <script type="text/javascript">
+function a(x,y){
+	l = $('#page').offset().left;
+	w = $('#page').width();
+	$('#tbox').css('left',(l + w + x) + 'px');
+	$('#tbox').css('bottom',y + 'px');
+}
+function b(){
+	h = $(window).height();
+	t = $(document).scrollTop();
+	if(t > h){
+		$('#gotop').fadeIn('slow');
+	}else{
+		$('#gotop').fadeOut('slow');
+	}
+}
+$(document).ready(function(e) {
+	a(10,10);//#tbox的div距浏览器底部和页面内容区域右侧的距离
+	b();
+	$('#gotop').click(function(){
+		$(document).scrollTop(0);
+	})
+});
+$(window).resize(function(){
+	a(10,10);////#tbox的div距浏览器底部和页面内容区域右侧的距离
+});
+
+$(window).scroll(function(e){
+	b();
+})
+</script>
+<script type="text/javascript" src="../../66613.files/js/gpsBar.js"></script>
+
+
+
+<script type="text/javascript">
+var _bdhmProtocol = (("https:" == document.location.protocol) ? " https://" : " http://");
+document.write(unescape("%3Cscript src='" + _bdhmProtocol + "hm.baidu.com/h.js%3Ffc19c432c6dd37e78d6593b2756fb674' type='text/javascript'%3E%3C/script%3E"));
+</script><script src=" http://hm.baidu.com/h.js?fc19c432c6dd37e78d6593b2756fb674" type="text/javascript"></script>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+
+<!-- stat.hebnews.cn/mysql -->
+<script language="javascript">var __$nodeid=152;var __$contentid=5424614;var __$title='北京提倡生态葬 6.5亩骨灰生态林力争年内开建';var __$AuthorPh='';var __$Editor='王艳荣';var __$Liability='王艳荣';var __$pubtime='2016-03-30 15:46:09';</script>
+<script language="JavaScript" charset="gb2312" src="http://tongji.hebnews.cn/mysql/count/abceffgh/abceffgh.js"></script><script src="http://stat.hebnews.cn/mysql/logcount.php?C_U_=http://stat.hebnews.cn/mysql&amp;P_U_=/2016-03/30/content_5424614.htm&amp;W_S_=abceffgh&amp;R_F_=&amp;F_S_=&amp;K_W_=&amp;W_C_=&amp;W_P_=&amp;R_W_=&amp;P_S_=http://world.hebnews.cn&amp;N_D_I_D_=152&amp;C_T_I_D_=5424614&amp;E_D_T_=%u738B%u8273%u8363&amp;P_T_=2016-03-30 15:46:09&amp;PIC_U_=undefined&amp;P_D_=/2016-03/30/&amp;L_G_=zh-CN&amp;C_L_=24&amp;C_K_=1&amp;S_S_=1280*800&amp;F_T_=2016-4-7-10-53-57&amp;L_T_=2016-4-7-10-53-57&amp;C_S_=UTF-8&amp;F_L_=1&amp;J_V_=0&amp;A_L_=0&amp;S_Y_=other&amp;B_R_=chrome&amp;T_Z_=-8&amp;A_U_=undefined&amp;U_N_=&amp;M_T_=&amp;U_C_=1459997637240&amp;R_C_=0&amp;D_B_=&amp;T_P_=1&amp;I_M_=&amp;T_X_=hidden&amp;T_T_=%u5317%u4EAC%u63D0%u5021%u751F%u6001%u846C%206.5%u4EA9%u9AA8%u7070%u751F%u6001%u6797%u529B%u4E89%u5E74%u5185%u5F00%u5EFA"></script><noscript>&lt;img src="http://stat.hebnews.cn/mysql/count/abceffgh/abceffgh.php" alt="" style="border:0" /&gt;</noscript>
+<!-- /stat.hebnews.cn/mysql -->
+
+
+<audio controls="controls" style="display: none;"></audio></body></html>'''
+
+
+def getHtml3():
+    return '''<html><head>
+<style id="znBdcsStyle" type="text/css">div#sliding-searchbox.sliding-searchbox-one #sliding-icon-left{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-right.png) no-repeat center center;margin-right:15px;float:left}div#sliding-searchbox.sliding-searchbox-two #sliding-icon-left{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-two-left.png) no-repeat center center;margin-right:15px;float:left}div#sliding-searchbox.sliding-searchbox-three #sliding-icon-left{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-three-left.png) no-repeat center center;margin-right:15px;float:left}div#sliding-searchbox.sliding-searchbox-four #sliding-icon-left{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-four-left.png) no-repeat center center;margin-right:15px;float:left}#sliding-searchbox #sliding-back-right{float:left;height:60px;width:14px;background:url(http://znsv.baidu.com/static/customer-search/img/back-right-common.png) no-repeat center center}#sliding-searchbox.sliding-searchbox-four #sliding-back-right{float:left;height:60px;width:14px;border-top:1px solid #C8E2F9;border-left:1px solid #C8E2F9;border-bottom:1px solid #C8E2F9;background:#F0F8FF url(http://znsv.baidu.com/static/customer-search/img/back-right-common-four.png) no-repeat center center}#sliding-box-item{width:383px;border:solid 1px;float:left}#sliding-box-item input{border:solid 1px;margin-right:0;text-indent:.5em}.sliding-box-meun #sliding-search-form-submit{text-indent:0}#sliding-hot{float:none;width:100%;margin-top:10px;overflow:hidden}#sliding-box-item .bdcs-container .bdcs-hot{height:50px}#sliding-searchbox #sliding-search-form .sliding-submit-magnifier{background:url(http://znsv.baidu.com/static/customer-search/img/search-icon.png) no-repeat center center;text-indent:-999em}.sliding-searchbox-four #sliding-searchbox .sliding-submit-magnifier{background:url(http://znsv.baidu.com/static/customer-search/img/search-icon-four.png) no-repeat center center;text-indent:-999em}#sliding-searchbox #sliding-box-item #sliding-search-form-submit{width:40px;text-align:center;margin-left:0;position:relative}#sliding-box-item input:focus{border:1px solid}#sliding-back{height:60px;width:14px;background:url(http://znsv.baidu.com/static/customer-search/img/back-left-common.png) no-repeat center center;float:left}.sliding-searchbox-four #sliding-back{height:60px;width:14px;background:url(http://znsv.baidu.com/static/customer-search/img/back-left-common-four.png) no-repeat center center;float:left}#sliding-search-sug-list{position:relative;//margin-left:10px}#sliding-search-sug .sliding-search-sug-list-item-current{background-color:#F5F5F5}div#sliding-searchbox.sliding-searchbox-one #sliding-icon-right{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-left.png) no-repeat center center;float:left;margin-left:15px}div#sliding-searchbox.sliding-searchbox-two #sliding-icon-right{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-two-right.png) no-repeat center center;float:left;margin-left:15px}div#sliding-searchbox.sliding-searchbox-three #sliding-icon-right{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-three-right.png) no-repeat center center;float:left;margin-left:15px}div#sliding-searchbox.sliding-searchbox-four #sliding-icon-right{height:60px;width:50px;background:url(http://znsv.baidu.com/static/customer-search/img/slidingbox-icon-four-right.png) no-repeat center center;float:left;margin-left:15px}#sliding-box-detail a{text-decoration:none;padding:3px;display:inline-block}#sliding-hot{width:0}.sliding-search-sug-list-item{cursor:pointer}.sliding-search-sug-list-item-value{position:relative;left:5px}.sliding-search-sug-list-item-author-novel,.sliding-search-sug-list-item-author-music,.sliding-search-sug-list-item-type-movie{color:#BABABA}.sliding-search-sug-list-item-author-novel,.sliding-search-sug-list-item-author-music{position:relative;left:5px}.sliding-search-sug-list-item-music{overflow:hidden;*zoom:1}#sliding-search-sug .sliding-search-sug-list-item-value-movie{float:left}#sliding-search-sug .sliding-search-sug-list-item-type-movie{float:right}#sliding-search-form-input{border-radius:0;float:none;padding:0;vertical-align:middle}#sliding-search-form-submit{border-radius:0;float:none;vertical-align:middle}#sliding-searchbox{overflow:visible;z-index:99999}div#sliding-searchbox .sliding-box-meun{padding-left:20px;padding-top:20px;position:relative;text-align:left}div#sliding-searchbox .sliding-channel-meun{position:relative;width:75px;display:inline-block;vertical-align:middle;background:#fff;cursor:pointer}div#sliding-searchbox .sliding-channel-current{border:1px solid;position:relative;width:100%;border-right:0}div#sliding-searchbox .sliding-channel-current span{margin-left:8px}div#sliding-searchbox .sliding-channel-current i{overflow:hidden;width:0;height:0;border-width:6px 6px 0;border-color:#9E9E9E #fff;border-style:solid;display:block;position:absolute;right:10px;top:15px}div.cse-sliding-channel-container{display:block;position:absolute;z-index:30061000000}div.cse-sliding-channel-container .sliding-channel-list{display:none;width:99%;list-style:none;background:#fff;border:1px solid #DDD;border-top:0;margin:0;padding:0}div.cse-sliding-channel-container .sliding-channel-list li{background:0 0;line-height:24px;list-style:none;padding-left:7px;cursor:pointer;display:block}div.cse-sliding-channel-container .sliding-channel-list li:hover{background:#DDD}#sliding-box-item{width:320px;height:120px;background-color:#fff;border-color:#ececec;}div#sliding-searchbox #sliding-back-right, div#sliding-searchbox #sliding-back{background-color:#1a89ed;}#sliding-box-item input{width:220px;height:35px;border-color:#ececec;color:#666;font-size:12px;font-family:微软雅黑;}#sliding-box-item #sliding-search-form-submit{background-color:#1a89ed;border-color:#1a89ed;color:#fff;font-family:微软雅黑;font-size:14px;font-weight:normal;}#sliding-box-item input:focus{border-color:#87C6F9;}#sliding-box-item #sliding-search-form-submit{position:relative;left:0px}#sliding-search-form-input{line-height:35px;}#sliding-hot{width:300px}#sliding-box-item #sliding-search-form-submit{height:35px}#sliding-searchbox{position:fixed;left:-428px;top:150px;}#bdcs-rec{display:none;}</style><meta http-equiv="content-type" content="text/html;charset=GB2312">
+<script type="text/javascript" async="" src="http://znsv.baidu.com/customer_search/api/js?sid=5102689337316652524&amp;plate_url=http%3A%2F%2Fcq.people.com.cn%2Fn2%2F2016%2F0401%2Fc365411-28065405.html&amp;t=405556"></script><script type="text/javascript">
+var cururl=document.URL;
+var cid=cururl.substring(cururl.indexOf('-')+1,cururl.lastIndexOf ('.'));
+var sUserAgent = navigator.userAgent.toLowerCase();
+var IsTC = sUserAgent.match(/transcoder/i) == "transcoder";
+var bIsIpad = sUserAgent.match(/ipad/i) == "ipad";
+var bIsIphoneOs = sUserAgent.match(/iphone os/i) == "iphone os";
+var bIsAndroid = sUserAgent.match(/android/i) == "android";
+var bIsMidp = sUserAgent.match(/midp/i) == "midp";
+var bIsWP = sUserAgent.match(/windows phone/i) == "windows phone";
+var bIsCE = sUserAgent.match(/windows ce/i) == "windows ce";
+var bIsWM = sUserAgent.match(/windows mobile/i) == "windows mobile";
+var bIsSYB = sUserAgent.match(/symbian/i) == "symbian";
+var bIsSER = sUserAgent.match(/series/i) == "series";
+//if(cid.length>1 && !isNaN(cid)){alert(cid);}
+if(cid.length>1 && !isNaN(cid) && (IsTC || bIsIphoneOs || bIsAndroid || bIsWP || bIsCE || bIsWM || bIsSYB || bIsSER)){ window.location.href="http://cq.people.com.cn/GB/365644/367006/?Num=28065405";}
+//if(bIsIpad){ window.location.href="http://cq.people.com.cn/m/phone/mnews.htm?Num=" + cid;}
+</script>
+<meta http-equiv="Content-Language" content="utf-8">
+<meta name="mobile-agent" content="format=html5;url=http://cq.people.com.cn/GB/365644/367006/?Num=28065405">
+<meta name="baidu-site-verification" content="0P8HvCoDek">
+<meta content="all" name="robots">
+<title>城口：2015年近8成贫困户获公益林生态效益补偿--重庆视窗--人民网 </title>
+<meta name="keywords" content="城口">
+<meta name="description" content="　　近日，笔者获悉，自精准扶贫工作开展以来，该县把公益林生态效益补偿作为一项重要的脱贫措施，大力实施公益林生态效益直补政策扶贫工程。2015年该县近8成贫困户获公益林生态效益补偿。">
+<meta name="copyright" content="人民网版权所有">
+<meta name="filetype" content="0">
+<meta name="publishedtype" content="1">
+<meta name="pagetype" content="1">
+<meta name="catalogs" content="L_365411">
+<meta name="contentid" content="L_28065405">
+<meta name="publishdate" content="2016-04-01">
+<meta name="author" content="L_104268">
+<meta name="editor" content="L_104268">
+<meta name="source" content="来源：人民网 原创稿">
+<meta name="sourcetype" content="2">
+<link rel="Shortcut Icon" href="/img/LOCAL/2014/06/112486/fav_icon.ico">
+<link rel="stylesheet" type="text/css" href="/img/LOCAL/2014/06/112486/index_2013.css">
+<link rel="stylesheet" type="text/css" href="/img/LOCAL/2014/06/112486/index_fy_2013.css">
+<link rel="stylesheet" type="text/css" href="/img/LOCAL/2014/06/112486/wbtw.css">
+<script src="http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion=405554"></script><script type="BAIDU_HH" runed="true">{"type":"flowbar","fixed_tpl":"2","di":"u2092251","rsi0":"auto","rsi1":"50","n":"1"}</script><script src="http://su.bdimg.com/static/dspui/js/ll/ls.js?dv=569"></script><style type="text/css">#yddContainer{display:block;font-family:Microsoft YaHei;position:relative;width:100%;height:100%;top:-4px;left:-4px;font-size:12px;border:1px solid}#yddTop{display:block;height:22px}#yddTopBorderlr{display:block;position:static;height:17px;padding:2px 28px;line-height:17px;font-size:12px;color:#5079bb;font-weight:bold;border-style:none solid;border-width:1px}#yddTopBorderlr .ydd-sp{position:absolute;top:2px;height:0;overflow:hidden}.ydd-icon{left:5px;width:17px;padding:0px 0px 0px 0px;padding-top:17px;background-position:-16px -44px}.ydd-close{right:5px;width:16px;padding-top:16px;background-position:left -44px}#yddKeyTitle{float:left;text-decoration:none}#yddMiddle{display:block;margin-bottom:10px}.ydd-tabs{display:block;margin:5px 0;padding:0 5px;height:18px;border-bottom:1px solid}.ydd-tab{display:block;float:left;height:18px;margin:0 5px -1px 0;padding:0 4px;line-height:18px;border:1px solid;border-bottom:none}.ydd-trans-container{display:block;line-height:160%}.ydd-trans-container a{text-decoration:none;}#yddBottom{position:absolute;bottom:0;left:0;width:100%;height:22px;line-height:22px;overflow:hidden;background-position:left -22px}.ydd-padding010{padding:0 10px}#yddWrapper{color:#252525;z-index:10001;background:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ab20.png);}#yddContainer{background:#fff;border-color:#4b7598}#yddTopBorderlr{border-color:#f0f8fc}#yddWrapper .ydd-sp{background-image:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ydd-sprite.png)}#yddWrapper a,#yddWrapper a:hover,#yddWrapper a:visited{color:#50799b}#yddWrapper .ydd-tabs{color:#959595}.ydd-tabs,.ydd-tab{background:#fff;border-color:#d5e7f3}#yddBottom{color:#363636}#yddWrapper{min-width:250px;max-width:400px;}</style><link rel="stylesheet" href="http://bdimg.share.baidu.com/static/api/css/share_style1_32.css"></head>
+<body>
+<div class="w980 clear cj01"><!-- #BeginlibraryItem "/library/2014dfnavtop.lbi" --><!-- 调用样式表 -->
+<script type="text/javascript" src="http://www.people.com.cn/img/2011people/jquery-1.4.3.min.js"></script>
+<script type="text/javascript">
+	/**处理已经登录的用户*/
+	function sso_page_login_user(guzzLoginUser){
+		var status = guzzLoginUser.displayName + "，欢迎您"  ;
+		$("#loginStatus").html(status) ;
+		$("#txz_dlq").hide();
+		$("#txz_dlh").show();
+	}
+</script>
+<script type="text/javascript" src="http://bbs1.people.com.cn/sns/newjs/common/jquery.rmw.global.js" charset="utf-8"></script>
+<script type="text/javascript" src="http://bbs1.people.com.cn/sns/newjs/pages/www.news.js" charset="utf-8"></script>
+  <style type="text/css">
+.nav_top2{ height:32px; background:url(/img/2012wbn/images/top_bg.gif);}
+.nav_top2 div{ line-height:32px;}
+.nav_top2 div em{ float:left;}
+.nav_top2 div.fr input,.nav_top2 div.fr select{ vertical-align:middle;}
+.nav_top2 div.fr input.input01{ height:16px; line-height:16px; width:60px; margin-left:5px; margin-right:10px;}
+.nav_top2 div.fr input.input02{ margin-left:10px; margin-right:10px; width:32px; height:20px;}
+.nav_top{ text-align:center; width:970px;}
+.nav_top em{ display:none;}
+.nav_top a{ padding:0 3px;}
+.nav_top i,.nav01 i a{ color:#c00;}
+.logo_line em{ float:left; padding-top:12px;}
+.logo_line i{ float:right;}
+.path a{ padding:0 10px;}
+.path em{ display:none;}
+  </style>
+  <!--[if !IE]><!-->
+<style type="text/css">
+.nav div span{margin-top:0px}
+.nav ul{ margin:6px 10px;}
+</style>
+<!--<![endif]-->
+  <!--人民网主导航-->
+  <!--nav-->
+<div class="nav_top2 clear">
+   <div class="w960">
+     <em><a href="http://www.people.com.cn" target="_blank">人民网首页</a></em>
+     <div class="fr" id="txz_dlq"><form id="sso_login_form" action="http://passport.people.com.cn/_login.do">账号<input value="" name="userName" id="userName" type="text" class="input01">密码<input type="password" value="" name="password" id="password" class="input01"><span style="display:none;"><input type="checkbox" name="rememberMe" id="rememberMe" checked="checked" value="1"><label for="rememberMe">记住登录状态</label></span><select name="retUrl" id="sso_login_form_retUrl" class="retUrl">
+  <option value="refer" selected="selected">选择去向</option>
+  <option value="http://bbs1.people.com.cn">强国社区</option>
+  <option value="http://bbs1.people.com.cn/boardList.do?action=postList&amp;boardId=1">强国论坛</option>
+  <option value="http://qgblog.people.com.cn">强国博客</option>
+  <option value="http://sns.people.com.cn">SNS</option>
+  <option value="http://t.people.com.cn">人民微博</option>
+  <option value="http://liaoba.people.com.cn">人民聊吧</option>
+  <option value="http://vblog.people.com.cn">人民播客</option>
+  <option value="http://ezheng.people.com.cn">E政广场</option>
+  <option value="http://71.people.com.cn">七一社区</option>
+  <option value="http://passport.people.com.cn/usr/loginSuccess.do">通行证首页</option>
+</select><input type="submit" name="" value="登录" class="input02">|&nbsp;&nbsp;<a href="http://passport.people.com.cn/usrReg.do?regFrom=news" target="_blank">注册</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="http://www.people.com.cn/GB/138812/index.html" target="_blank">网站地图</a></form></div>
+     <div class="fr" id="txz_dlh" style="display:none;"><span id="loginStatus"></span>&nbsp;
+<select class="dlh_select" onchange="window.open(this.value)">
+  <option value="http://www.people.com.cn" selected="selected">选择去向</option>
+  <option value="http://bbs1.people.com.cn">强国社区</option>
+  <option value="http://bbs1.people.com.cn/boardList.do?action=postList&amp;boardId=1">强国论坛</option>
+  <option value="http://qgblog.people.com.cn">强国博客</option>
+  <option value="http://sns.people.com.cn">SNS</option>
+  <option value="http://t.people.com.cn">人民微博</option>
+  <option value="http://liaoba.people.com.cn">人民聊吧</option>
+  <option value="http://vblog.people.com.cn">人民播客</option>
+  <option value="http://ezheng.people.com.cn">E政广场</option>
+  <option value="http://71.people.com.cn">七一社区</option>
+  <option value="http://passport.people.com.cn/usr/loginSuccess.do">通行证首页</option>
+</select>
+&nbsp;<a href="http://passport.people.com.cn/logout.do?retUrl=refer"><img src="/img/2011people/images/login_exit.jpg" width="40" height="19" alt="" data-bd-imgshare-binded="1"></a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="http://www.people.com.cn/GB/138812/index.html" target="_blank">网站地图</a></div>
+   </div>
+</div>
+<script type="text/javascript">
+$("#sso_login_form").bind('submit', function(event){
+	if(!$("#userName").val()){
+		alert("请输入用户名") ;
+		event.preventDefault() ;
+	}else if(!$("#password").val()){
+		alert("请输入密码") ;
+		event.preventDefault() ;
+	}
+
+}) ;
+
+$("#sso_login_form_retUrl").bind('change', function(event){
+	if($(this).val() == 'http://www.people.com.cn'){
+		$("#sso_login_form").attr("target", "_top") ;
+	}else{
+		$("#sso_login_form").attr("target", "_blank") ;
+	}
+}) ;
+</script>
+<div class="nav_top m10"><em><img src="/img/2012wbn/images/logo03.gif" width="103" height="43" data-bd-imgshare-binded="1"></em><i><a href="http://cpc.people.com.cn/" target="_blank">共产党新闻</a></i><a href="http://news.people.com.cn/" target="_blank">要闻</a><a href="http://politics.people.com.cn/" target="_blank">时政</a><a href="http://legal.people.com.cn/" target="_blank">法治</a>|<a href="http://world.people.com.cn/" target="_blank">国际</a><a href="http://military.people.com.cn/" target="_blank">军事</a>|<a href="http://tw.people.com.cn/" target="_blank">台港澳</a><a href="http://edu.people.com.cn/" target="_blank">教育</a>|<a href="http://society.people.com.cn/" target="_blank">社会</a><a href="http://pic.people.com.cn/" target="_blank">图片</a><a href="http://opinion.people.com.cn/" target="_blank">观点</a><a href="http://unn.people.com.cn/GB/41796/index.html" target="_blank">地方</a>|<a href="http://finance.people.com.cn/" target="_blank">财经</a><a href="http://auto.people.com.cn/" target="_blank">汽车</a><a href="http://house.people.com.cn/" target="_blank">房产</a>|<a href="http://sports.people.com.cn/" target="_blank">体育</a><a href="http://ent.people.com.cn/" target="_blank">娱乐</a><a href="http://culture.people.com.cn/" target="_blank">文化</a><a href="http://media.people.com.cn/" target="_blank">传媒</a>|<a href="http://tv.people.com.cn/" target="_blank">电视</a><a href="http://bbs.people.com.cn/" target="_blank">社区</a><a href="http://zhengwutong.com" target="_blank">政务通</a><a href="http://blog.people.com.cn" target="_blank">博客</a><a href="http://fangtan.people.com.cn/" target="_blank">访谈</a>|<a href="http://game.people.com.cn/" target="_blank">游戏</a><a href="http://mms.people.com.cn/" target="_blank">彩信</a><a href="http://comic.people.com.cn/" target="_blank">动漫</a><a href="http://rss.people.com.cn/" target="_blank">RSS</a></div>
+<script type="text/javascript">
+var bForcepc = fGetQuery("dv") == "pc";
+function fBrowserRedirect(){
+    var sUserAgent = navigator.userAgent.toLowerCase();
+    var bIsIpad = sUserAgent.match(/ipad/i) == "ipad";
+    var bIsIphoneOs = sUserAgent.match(/iphone os/i) == "iphone os";
+    var bIsMidp = sUserAgent.match(/midp/i) == "midp";
+    var bIsUc7 = sUserAgent.match(/rv:1.2.3.4/i) == "rv:1.2.3.4";
+    var bIsUc = sUserAgent.match(/ucweb/i) == "ucweb";
+    var bIsAndroid = sUserAgent.match(/android/i) == "android";
+    var bIsCE = sUserAgent.match(/windows ce/i) == "windows ce";
+    var bIsWM = sUserAgent.match(/windows mobile/i) == "windows mobile";
+    if(bIsIphoneOs || bIsAndroid||bIsMidp||bIsUc7||bIsUc||bIsCE||bIsWM){
+        var sUrl = location.href;
+        if(!bForcepc){
+		var iframe=document.getElementsByTagName("iframe");
+    for(var i=0;i<iframe.length;i++){
+    iframe[i].src="";
+	}
+    }
+    }
+}
+function fGetQuery(name){
+    var sUrl = window.location.search.substr(1);
+    var r = sUrl.match(new RegExp("(^|&)" + name + "=([^&]*)(&|$)"));
+    return (r == null ? null : unescape(r[2]));
+}
+fBrowserRedirect();
+</script>
+  <!--结束 人民网主导航--><!-- #EndlibraryItem --></div>
+<div class="div990">
+<div class="Logo mt10"><a href="http://cq.people.com.cn" target="_top"><img src="http://mcq.people.com.cn/img201508/logo.gif" alt="人民网重庆视窗" data-bd-imgshare-binded="1"></a></div>
+  <div class="main_nav01 mt10"><ul class="mt7">
+			<li><a href="http://cq.people.com.cn/" target="_blank">&nbsp;首页&nbsp;</a></li>
+            <li><a href="http://cq.people.com.cn/GB/365401/" target="_blank">&nbsp;原创&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365402/" target="_blank">&nbsp;重庆&nbsp;</a></li>
+			<li><a href="http://mcq.people.com.cn/video-web/" target="_blank">&nbsp;电视&nbsp;</a></li>
+			<li><a href="http://mcq.people.com.cn/pic-web/" target="_blank">&nbsp;高清&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365403/" target="_blank">&nbsp;国内&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365424/" target="_blank">&nbsp;舆情&nbsp;</a></li>
+            <li><a href="http://cq.people.com.cn/GB/365405/" target="_blank">&nbsp;社会&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365408/" target="_blank">&nbsp;评论&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365417/" target="_blank">&nbsp;专题&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365425/" target="_blank">&nbsp;人民日报看重庆&nbsp;</a></li>
+		</ul>
+		<ul>
+			<li><a href="http://cq.people.com.cn/GB/365411/" target="_blank">&nbsp;区县&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365415/" target="_blank">&nbsp;房产&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365412/" target="_blank">&nbsp;企业&nbsp;</a></li>
+            <li><a href="http://cq.people.com.cn/GB/365413/" target="_blank">&nbsp;金融&nbsp;</a></li>
+            <li><a href="http://cq.people.com.cn/GB/371335/" target="_blank">&nbsp;教育&nbsp;</a></li>
+			<li><a href="http://mcq.people.com.cn/jkpd/" target="_blank">&nbsp;健康&nbsp;</a></li>
+			<li><a href="http://mcq.people.com.cn/newscenter/cq/cqlb.cqr300" target="_blank">&nbsp;联播&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365416/" target="_blank">&nbsp;汽摩&nbsp;</a></li>
+			<li><a href="http://cq.people.com.cn/GB/365409/" target="_blank">&nbsp;文娱&nbsp;</a></li>
+            <li><a href="http://cq.people.com.cn/GB/365410/" target="_blank">&nbsp;体育&nbsp;</a></li>
+            <li><a href="http://liuyan.people.com.cn/index.php?gid=33" target="_blank">&nbsp;给地方领导留言&nbsp;</a></li>
+		</ul></div>
+  <div class="blank10 clear"></div>
+  <div class="ad990"><a href="http://lianghui.people.com.cn/2016npc/" target="_blank" title="十二届全国人大四次会议专题--中国人大新闻"><img src="http://mcq.people.com.cn/gg2016/990x75_quanguolianghui.jpg" width="990" height="75" alt="十二届全国人大四次会议专题--中国人大新闻" data-bd-imgshare-binded="1"></a></div>
+</div>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="/img/LOCAL/2014/06/112486/js/easytabswb.js"></script>
+<script src="/css/search.js"></script>
+<!--------loginbar-------->
+<div id="loginbar" class="clear clearfix">
+  <div class="w980">
+
+    <form action="http://search.people.com.cn/rmw/GB/rmwsearch/gj_search_pd.jsp" name="searchForm" method="post" onsubmit="if(getParameter_DJ('上海频道') == false) return false;" target="_blank">
+<input type="hidden" name="XMLliST">
+	<div class="search"><input type="text" name="names" id="names" size="27" maxlength="50"> <input name="submit1" type="image" src="/img/LOCAL/2014/06/112486/images/icon_ser1.gif"></div></form>
+<div class="toplist">
+  <div class="topicon">
+    <ul><li><a><img src="/img/LOCAL/2014/06/112486/images/home.png" alt="主页" data-bd-imgshare-binded="1"></a></li>
+      <li><a href="/cqqs_bbs/register.cq" target="_blank"><img src="/img/LOCAL/2014/06/112486/images/zhuce.png" alt="注册" data-bd-imgshare-binded="1"></a></li>
+      <li><a href="mailto:rmrb_cq@163.net" target="_blank"><img src="/img/LOCAL/2014/06/112486/images/tougao.png" alt="投稿" data-bd-imgshare-binded="1"></a></li>
+      <li style="border:0px;cursor:hand; a:hover:test-decoration: underline;" onclick="window.external.addFavorite('http://cq.people.com.cn','人民网·重庆视窗')"><img src="/img/LOCAL/2014/06/112486/images/shouchang.png" alt="收藏" data-bd-imgshare-binded="1"></li></ul>
+    </div>
+  </div>
+  </div>
+</div>
+<!--------topnav-------->
+<table width="980" id="main" border="0" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+    <td align="left" valign="top" width="660"><div id="left">
+    <div class="left_nav">
+	 	<div class="left_nav_text"><a href="http://www.people.com.cn/">人民网</a> &gt;&gt; <a href="http://cq.people.com.cn/">重庆视窗</a> &gt;&gt; <a href="http://cq.people.com.cn/GB/365411/">区县</a></div>
+	</div>
+	<!-----标题----->
+	<div class="j_title"><span></span></div>
+	<div class="m_title"><span>城口：2015年近8成贫困户获公益林生态效益补偿</span></div>
+	<div class="f_title"><span></span></div>
+	<!-----来源----->
+	<div class="m_zs">
+	<p class="sjly">2016年04月01日15:51　 来源：<a href="http://www.people.com.cn/" target="_blank">人民网</a>　 (责编：王嫚、张祎)</p>
+	<p class="sjwb"><a href="http://t.sina.com.cn/cqpeople" target="_blank">微博看重庆</a></p>
+	</div>
+	<!-----摘要----->
+	<div class="m_zy"><table class="summary" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td valign="top" align="left">　　近日，笔者获悉，自精准扶贫工作开展以来，该县把公益林生态效益补偿作为一项重要的脱贫措施，大力实施公益林生态效益直补政策扶贫工程。2015年该县近8成贫困户获公益林生态效益补偿。</td></tr></tbody></table></div>
+	<div class="m_text">
+
+	<p></p><p>
+	　　人民网重庆4月1日电 近日，笔者获悉，自精准扶贫工作开展以来，该县把公益林生态效益补偿作为一项重要的脱贫措施，大力实施公益林生态效益直补政策扶贫工程。2015年该县近8成贫困户获公益林生态效益补偿。</p>
+<p>
+	　　2015年，该县共兑现林农公益林生态效益补偿资金1604万元，惠及林农49000余户。其中，建卡贫困户8493户，占全县建卡贫困户总数的77.2%，兑现补偿资金2823762.12元，人均获得补偿75元。</p>
+<p>
+	　　“自2014年起，保证政策落实到户到人，资金的兑现采用银行“一卡通”发放。”县林业局有关负责人说，有效减少了资金发放环节，杜绝了资金被截留、挪用等现象，这一到户脱贫政策的落实，增加了贫困户政策性收入，在一定程度上帮助了贫困户缓解了生产生活筹资难。</p>
+<p>
+	　　目前，该县正在积极向上级部门争取利用生态补偿和生态保护工程资金，将本地有劳动能力的部分贫困人口转为护林员等生态保护人员，以解决贫困群众就业问题，帮助贫困人口稳定增收，实现脱贫不返贫。（王嫚 李小玲 黄座登 王文）</p>
+<p></p>
+</div>
+	<!-----分享----->
+	<div class="m_zr"><div class="bdsharebuttonbox bdshare-button-style1-32" data-bd-bind="1459998436047"><a class="bds_more" href="#" data-cmd="more"></a><a title="分享到QQ好友" class="bds_sqq" href="#" data-cmd="sqq"></a><a title="分享到微信" class="bds_weixin" href="#" data-cmd="weixin"></a><a title="分享到新浪微博" class="bds_tsina" href="#" data-cmd="tsina"></a><a title="分享到腾讯微博" class="bds_tqq" href="#" data-cmd="tqq"></a><a title="分享到QQ空间" class="bds_qzone" href="#" data-cmd="qzone"></a><a title="分享到人人网" class="bds_renren" href="#" data-cmd="renren"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"32"},"share":{},"image":{"viewList":["sqq","weixin","tsina","tqq","qzone","renren"],"viewText":"分享到：","viewSize":"16"},"selectShare":{"bdContainerClass":null,"bdSelectMiniList":["sqq","weixin","tsina","tqq","qzone","renren"]}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script></div>
+
+
+
+	<!-----评论----->
+	<div class="pl">
+	  <span id="news_id" style="display:none;">28065405</span>
+       <a name="liuyan"></a>
+       <!-- 页面1开始 -->
+	 <div class="message">
+		<script type="text/javascript">
+			var isLogin = false;
+			/**处理已经登录的用户*/
+			function sso_page_login_user(guzzLoginUser){
+				var status = guzzLoginUser.displayName + ", 欢迎你&nbsp;&nbsp;&nbsp;<a href='http://passport.people.com.cn/logout.do?retUrl=refer'><font color=red>【退出】</font></a>" ;
+				$("#idForLoginPanel").html(status) ;
+				$("#operPanel").css("display", "none") ;
+				portraitImg = rmw.global.getPortraitUrl(guzzLoginUser.userNick, 50) ;
+				$(".portrait").attr("src",portraitImg);
+				$("#userLink").attr("href","http://sns.people.com.cn/home.do?uid="+guzzLoginUser.userId);
+				$("#userLink").attr("target","_blank");
+				var o=new Image();
+		        o.src=portraitImg;
+		        o.onerror=function(){
+		         $(".portrait").attr("src","/img/2012wbn/images/message/b2.jpg");
+		         $("#userLink").attr("href","#");
+
+		        };
+				$("#errorMsg").html("");
+
+				var status1 = guzzLoginUser.displayName + "，欢迎您" ;
+				$("#loginStatus").html(status1) ;
+				$("#txz_dlq").hide();
+				$("#txz_dlh").show();
+				isLogin = true;
+			}
+
+			/**处理访客*/
+			function sso_page_login_guest(){
+			    var href = window.location.href;
+			    var errorMsg = _rmw_util_.getQueryString(href, "errorMsg") ;
+			    if(errorMsg == 1){
+				$("#errorMsg").html("<font color='red'>登录失败!请检查用户名和密码</font>");
+				}
+			}
+
+			$(document).ready(function(){
+				$("#login_btn").click(function(){
+					 var userName = $("#loginForm_userName").attr("value") ;
+					 var password = $("#loginForm_password").attr("value");
+					  if(userName==''||userName==null){
+			                 $("#login_error_tip").html("<font color='red'>请输入通行证帐号</font>").hide().fadeIn(1500) ;
+			                 $("#login_error_tip").fadeOut(1500);
+					 		 return false ;
+					  }else if(password==''||password==null){
+			                 $("#login_error_tip").html("<font color='red'>请输入通行证密码</font>").hide().fadeIn(1500) ;
+			                 $("#login_error_tip").fadeOut(1500);
+					 		 return false ;
+					  }
+					  $("#loginForm").attr("action","http://passport.people.com.cn/_login.do"); //test
+					  $("#loginForm").submit();
+
+				})
+				 //登录动作
+				 $(".dlk_a").click(function(){
+					 $("#postReply").hide();
+					 $("#dlkLogin").show();
+			     })
+
+
+				 $(".close").click(function(){
+					$("#dlkLogin").hide();
+					 $("#postReply").show();
+				 })
+				var quesType = "";
+
+				$("#messageContent").blur(function(){
+					 if($(this).val()==""){
+						 $(this).addClass("messageContentRed");
+						 $(this).val("请输入留言内容") ;
+			        };
+				});
+				$("#messageContent").focus(function(){
+					  if($(this).val()=="请输入留言内容"){
+						  $(this).removeClass("messageContentRed");
+						  $(this).val("");
+			          }
+				});
+				var count = 30;
+				$("#replyForm_nid").val($("#news_id").html());
+				$("#loginForm_nid").val($("#news_id").html());
+				$('#replyForm').submit(function(){
+					if($("#messageContent").val().length==0||$("#messageContent").val()=="请输入留言内容"){
+						$("#messageContent").blur();
+					}else{
+					  jQuery.ajax({
+							url : "http://bbs1.people.com.cn/postRecieveFromNewsLocal.do" ,
+							type: "GET",
+							dataType: "jsonp",
+							data : $(this).serialize(),
+							success: function(text){
+								 var obj = eval('(' + text + ')');
+								 $("#postReply").hide();
+								 $("#messageContent").val("");
+								 $(".post0").attr("href",obj.postLink0);
+								 $(".post0").html(obj.postTitle0);
+								 $(".post1").attr("href",obj.postLink1);
+								 $(".post1").html(obj.postTitle1);
+								 if(obj.msg=='success'&& obj.quickPost==1){
+									 $("#randomUserName").html(obj.userName);
+									 $("#randomUserPassword").html(obj.password);
+									 $("#quickPostSuccess").show();
+									 setTimeout(BtnCount, 1000);
+								 }else if(obj.msg=='success'){
+									 $("#success").show();
+									 setTimeout("$('#success').hide();", 5000);
+									 setTimeout("$('#postReply').show();", 5000);
+								 }else{
+									 $("#postErrorMsg").html(obj.msg);
+									 $("#fail").show();
+									 setTimeout("$('#fail').hide();", 5000);
+									 setTimeout("$('#postReply').show();", 5000);
+								 }
+							}
+						});
+					}
+				   return false;
+			   });
+
+				BtnCount = function(){
+					 if (count == 0) {
+						 location.reload();
+					 }else{
+						 $("#returnTime").html(count--);
+						 setTimeout(BtnCount, 1000);
+					 }
+				}
+			});
+
+		</script>
+	<!-- 页面1结束 --><!-- 页面2开始 -->
+<div id="postReply">
+		<!--留言-->
+		<div class="w600">
+			<form id="replyForm" name="replyForm" method="post">
+				<input type="hidden" name="nid" id="replyForm_nid" value="28065405">
+				<input type="hidden" name="isAjax" value="true">
+				<div class="tit">
+					<h2>我要留言</h2>
+					<span>
+						<a href="http://bbs1.people.com.cn" target="_blank">进入讨论区</a>
+						<a href="http://bbs1.people.com.cn" target="_blank">论坛</a>
+						<a href="http://blog.people.com.cn" target="_blank">博客</a>
+						<a href="http://t.people.com.cn" target="_blank">微博</a>
+						<a href="http://sns.people.com.cn" target="_blank">SNS</a>
+						<a href="http://bbs1.people.com.cn/board/131.html" target="_blank">育儿宝</a>
+						<a href="http://bbs1.people.com.cn/board/3/29.html" target="_blank">图片</a>
+					</span>
+				</div>
+				<dl class="message_c">
+					<dt>
+						<a href="#" id="userLink"><img class="portrait" src="/img/2012wbn/images/message/b2.jpg" width="48" height="48" alt=" " data-bd-imgshare-binded="1"> </a> <br>
+						<span id="operPanel"> <a href="http://passport.people.com.cn/usrReg.do?regFrom=qglt" target="_blank">注册</a>/<a class="dlk_a" style="cursor: pointer;">登录</a> </span>
+					</dt>
+					<dd>
+						<b><a href="http://bbs1.people.com.cn/gltl.do" target="_blank">发言请遵守新闻跟帖服务协议</a> </b>&nbsp;&nbsp;<b id="errorMsg"></b><br>
+						<textarea name="messageContent" cols="" rows="" id="messageContent" onfocus="if(value=='善意回帖，理性发言!'){value=''}">善意回帖，理性发言!</textarea>
+						<p>
+							<span id="idForLoginPanel">使用其他账号登录:
+								<a href="http://open.denglu.cc/transfer/sina?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/sina.gif" width="16" height="17" alt="新浪微博帐号登录" data-bd-imgshare-binded="1"> </a>
+								<a href="http://open.denglu.cc/transfer/qzone?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/qq.gif" width="16" height="17" alt="QQ帐号登录" data-bd-imgshare-binded="1"> </a>
+								<a href="http://open.denglu.cc/transfer/renren?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/renren.gif" width="16" height="17" alt="人人帐号登录" data-bd-imgshare-binded="1"> </a> <a href="http://open.denglu.cc/transfer/baidu?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/baidu.gif" width="16" height="17" alt="百度帐号登录" data-bd-imgshare-binded="1"> </a>
+								<a href="http://open.denglu.cc/transfer/douban?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/douban.gif" width="16" height="17" alt="豆瓣帐号登录" data-bd-imgshare-binded="1"> </a>
+								<a href="http://open.denglu.cc/transfer/tianya?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/tianya.gif" width="16" height="17" alt="天涯帐号登录" data-bd-imgshare-binded="1"> </a>
+								<a href="http://open.denglu.cc/transfer/taobao?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/taobao.gif" width="16" height="17" alt="淘宝帐号登录" data-bd-imgshare-binded="1"> </a>
+								<a href="http://open.denglu.cc/transfer/windowslive?appid=11646denmMU7U45KpQ1WYz2J9lfOnA&amp;param1=1" target="_blank">
+								<img src="/img/2012wbn/images/message/dl3.gif" width="16" height="17" alt="MSN帐号登录" data-bd-imgshare-binded="1"> </a> </span>
+								<strong>同步：<input type="checkbox" checked=""><a href="#"><img src="/img/2012wbn/images/message/people.gif" width="16" height="16" alt="分享到人民微博" data-bd-imgshare-binded="1"> </a>&nbsp;
+								<input type="submit" class="sub_input" value=""></strong>
+						</p>
+					</dd>
+				</dl>
+			</form>
+		</div>
+	</div>
+
+	<!-- 弹出层页面 -->
+	<style type="text/css">
+	   body{padding:0;margin:0;font:normal 12px/180% "SimSun"; color:#333;background:#fff;text-align:left;}
+	    h1,h2,h3,h4,h5,h6,hr,p,blockquote,dl,dt,dd,ul,ol,li,pre,form,button,input,textarea,th,td{margin:0;padding:0;}
+	    div{ margin:0 auto;text-align:left;font:normal 12px/180% "SimSun";}
+	    a:link,a:visited{color:#000;text-decoration:none}
+	    a:hover{color:#c00;text-decoration:underline}
+	    img{ border:none}
+	    ol,ul,li{list-style:none;}
+	    i{font-style:normal;}
+	      /*clear*/
+	      .clear{clear:both}
+	      .clearfix:after,.search_left p:after,.search_list_c p:after{display:block;clear:both;content:".";visibility:hidden; height:0;}
+	      /*color style*/
+	      .green{color:#498b08;}
+	      /*other*/
+	      .w980{width:980px;}
+	      .fl{float:left;}
+	      .fr{float:right;}
+	      .tc{text-align:center;}
+	      .tl{text-align:left;}
+	      .tr{text-align:right;}
+	      /*留言提示*/
+	      .message_tip{width: 570px;height: 196px;border: 5px solid #e9f6fc;margin: 0;}
+	      .message_tip p{text-align: center;padding: 5px 0;color: #8a8a8a;}
+	      .message_tip p img{vertical-align: middle;}
+	      .message_tip p.t1{color: #4c86d0;padding: 15px 0;font-size: 14px;}
+	      .message_tip p.t2{background: #e6f5fc;color: #878988;}
+	      .message_tip p.t2 a:link,.message_tip p.t2 a:visited,.message_tip p.t2 a:hover,.message_tip p.t1 a:link,.message_tip p.t1 a:visited,.message_tip p.t1 a:hover{color: #c30101;}
+	      .message_tip p a:link,.message_tip p a:visited,.message_tip p a:hover{color: #878988;}
+	      .messageContentRed{ color:red;}
+     </style>
+	<!-- 登录 -->
+	<div class="clearfix" id="dlkLogin">
+	<div class="dlk">
+			<div class="dlk_t">
+				<b>社区登录</b><b id="login_error_tip" align="center"></b><a href="javascript:void(0);" class="close"><img src="/img/2012wbn/images/message/dl_06.gif" alt="" data-bd-imgshare-binded="1"> </a>
+			</div>
+			<form id="loginForm" method="post">
+				<input type="hidden" name="rememberMe" value="1">
+				<input type="hidden" name="retUrl" value="refer">
+				<input type="hidden" name="nid" id="loginForm_nid" value="28065405">
+				<table border="0" align="center" cellpadding="0" cellspacing="15">
+					<tbody><tr>
+						<td>用户名： <input type="text" class="input_userName" name="userName" id="loginForm_userName"> <i>
+							<a href="http://passport.people.com.cn/usrReg.do?regFrom=qglt" target="_blank">立即注册</a> </i>
+						</td>
+					</tr>
+					<tr>
+						<td>密&nbsp;&nbsp;码： <input type="password" class="input_userName" id="loginForm_password" name="password"> <i>
+							<a href="http://passport.people.com.cn/findPsw_selectType.do" target="_blank">找回密码</a> </i>
+						</td>
+					</tr>
+					<tr>
+						<td align="center">
+							<a id="login_btn"><img src="/img/2012wbn/images/message/dl_11.gif" data-bd-imgshare-binded="1"> </a>&nbsp;&nbsp;
+							<a class="close"><img src="/img/2012wbn/images/message/dl_13.gif" data-bd-imgshare-binded="1"> </a>
+						</td>
+					</tr>
+				</tbody></table>
+			</form>
+	</div>
+	<div class="dlk_bg"></div>
+	</div>
+	<!-- quickPost eq '1' && msg eq 'success' -->
+	<div class="message_tip" id="quickPostSuccess" style="display: none;">
+	    <p class="t1"><img src="/img/2012wb/images/dui.gif" alt="" border="0" data-bd-imgshare-binded="1">恭喜你，发表成功!</p>
+	    <p class="t2">请牢记你的用户名:<span id="randomUserName"></span>，密码:<span id="randomUserPassword"></span>,立即进入<a href="http://sns.people.com.cn" target="_blank">个人中心</a>修改密码。</p>
+	    <p><span id="returnTime">30</span>s后自动返回</p>
+	    <p><a href="javascript:location.reload();"><img src="/img/2012wb/images/fanhui.gif" alt="" border="0" data-bd-imgshare-binded="1"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://bbs1.people.com.cn/" target="_blank"><img src="/img/2012wb/images/jinru.gif" alt="" border="0" data-bd-imgshare-binded="1"></a></p>
+	    <p><a class="post0" href="" target="_blank">推荐帖子推荐帖子推荐帖子</a>&nbsp;&nbsp;&nbsp;&nbsp;<a class="post1" href="" target="_blank">推荐帖子推荐帖子推荐帖子</a></p>
+	</div>
+
+	<!-- msg != 'success' -->
+	<div class="message_tip" id="fail" style="display: none;">
+	    <p class="t1"><img src="/img/2012wb/images/close.jpg" alt="" border="0" data-bd-imgshare-binded="1"><span id="postErrorMsg"></span>!</p>
+	    <p></p>
+	    <p>5s后自动返回</p>
+	    <p><a href="javascript:location.reload();"><img src="/img/2012wb/images/fanhui.gif" alt="" border="0" data-bd-imgshare-binded="1"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://bbs1.people.com.cn/" target="_blank"><img src="/img/2012wb/images/jinru.gif" alt="" border="0" data-bd-imgshare-binded="1"></a></p>
+	    <p><a href="" class="post0" target="_blank">推荐帖子推荐帖子推荐帖子</a>&nbsp;&nbsp;&nbsp;&nbsp;<a class="post1" href="" target="_blank">推荐帖子推荐帖子推荐帖子</a></p>
+	</div>
+
+	<!-- msg == 'success' -->
+	<div class="message_tip" id="success" style="display: none;">
+	    <p class="t1"><img src="/img/2012wb/images/dui.gif" alt="" border="0" data-bd-imgshare-binded="1">恭喜你，发表成功!</p>
+	    <p>5s后自动返回</p>
+	    <p><a href="javascript:location.reload();"><img src="/img/2012wb/images/fanhui.gif" alt="" border="0" data-bd-imgshare-binded="1"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://bbs1.people.com.cn/" target="_blank"><img src="/img/2012wb/images/jinru.gif" alt="" border="0" data-bd-imgshare-binded="1"></a></p>
+	    <p><a class="post0" href="" target="_blank">推荐帖子推荐帖子推荐帖子</a>&nbsp;&nbsp;&nbsp;&nbsp;<a class="post1" href="" target="_blank">推荐帖子推荐帖子推荐帖子</a></p>
+	</div>
+	</div>
+       <!--message end-->
+       <!--留言板块--><div class="note_list clearfix" style="display: none;"><div class="note_t clearfix"><ul><li id="news_pinglun" class="focus">最新评论</li><li id="hot_pinglun">热门评论</li></ul><span id="hot_key">热词:<a href="http://bbs1.people.com.cn/quickSearch.do?field=title&amp;threadtype=1&amp;content=%E5%8D%81%E4%B8%89%E4%BA%94" target="_blank">十三五</a><a href="http://bbs1.people.com.cn/quickSearch.do?field=title&amp;threadtype=1&amp;content=%E5%85%BB%E8%80%81" target="_blank">养老</a><a href="http://bbs1.people.com.cn/quickSearch.do?field=title&amp;threadtype=1&amp;content=%E6%89%B6%E8%B4%AB" target="_blank">扶贫</a><a href="http://bbs1.people.com.cn/quickSearch.do?field=title&amp;threadtype=1&amp;content=%E5%9B%BD%E4%BC%81%E6%94%B9%E9%9D%A9" target="_blank">国企改革</a><a href="http://bbs1.people.com.cn/quickSearch.do?field=title&amp;threadtype=1&amp;content=%E8%82%A1%E5%B8%82" target="_blank">股市</a></span><a href="" id="all_link" target="_blank">鏌ョ湅鍏ㄩ儴undefined鏉＄暀瑷€</a></div><div class="note_list_c clearfix" id="note_list_c"><ul></ul></div></div><script type="text/javascript" src="/img/2012wb/jquery.note.local.js"></script><script type="text/javascript">$(document).ready(function() {$.show_note_list('28065405','28065405');});</script><!--结束留言板块-->
+	</div>
+	<div class="blank30"></div>
+	<!-----底部新闻----->
+	<div class="zhxw">
+		<div class="menu">
+			  <ul><li><a href="http://cq.people.com.cn/GB/365409/" target="_blank" onmouseover="easytabs('1', '1');" onfocus="easytabs('1', '1');" title="娱乐" id="tablink1">娱乐</a></li>
+				<li><a href="http://cq.people.com.cn/GB/365418/" target="_blank" onmouseover="easytabs('1', '2');" onfocus="easytabs('1', '2');" title="旅游" id="tablink2">旅游</a></li>
+				<li><a href="http://cq.people.com.cn/GB/365411/" target="_blank" onmouseover="easytabs('1', '3');" onfocus="easytabs('1', '3');" title="区县" id="tablink3">区县</a></li>
+				<li><a href="http://mcq.people.com.cn/jrcq/" target="_blank" onmouseover="easytabs('1', '4');" onfocus="easytabs('1', '4');" title="金融" id="tablink4">金融</a> </li>
+				<li><a href="http://mcq.people.com.cn/qiyemingpian/" target="_blank" onmouseover="easytabs('1', '5');" onfocus="easytabs('1', '5');" title="企业" id="tablink5">企业</a> </li>
+				<li><a href="http://mcq.people.com.cn/house/" target="_blank" onmouseover="easytabs('1', '6');" onfocus="easytabs('1', '6');" title="房产" id="tablink6">房产</a> </li>
+				<li><a href="http://mcq.people.com.cn/jkpd/" target="_blank" onmouseover="easytabs('1', '7');" onfocus="easytabs('1', '7');" title="健康" id="tablink7">健康</a> </li>
+<script type="text/javascript">var cpro_id = 'u2092251';</script><script src=" http://su.bdimg.com/static/dspui/js/uf.js" type="text/javascript"></script></ul>
+			</div>
+			<div id="tabcontent1">
+
+		      <div class="tab_m">
+
+
+		      </div>
+			</div>
+			<!--Start Tabcontent 2-->
+			<div id="tabcontent2">
+              <div class="tab_pic"><ul class="tw195">
+				  <li class="pic"><a href="/n/2015/1104/c365418-27015263.html" target="_blank"><img src="/NMediaFile/2015/1104/LOCAL201511041455000378016161602.jpg" width="300" height="225" border="0" alt="尚色美术教育户外写生活动回顾" data-bd-imgshare-binded="1"></a></li>
+				  <li class="text"><a href="/n/2015/1104/c365418-27015263.html" target="_blank">尚色美术教育户外写生活动回顾</a></li>
+				  <li class="trans_layer"></li>
+		        </ul>
+<ul class="tw195">
+				  <li class="pic"><a href="/n/2015/1104/c365418-27015243.html" target="_blank"><img src="/NMediaFile/2015/1104/LOCAL201511041453000567643554704.jpg" width="300" height="225" border="0" alt="巴蜀书院塘河古镇民俗文化探索之旅" data-bd-imgshare-binded="1"></a></li>
+				  <li class="text"><a href="/n/2015/1104/c365418-27015243.html" target="_blank">巴蜀书院塘河古镇民俗文化探索...</a></li>
+				  <li class="trans_layer"></li>
+		        </ul>
+
+</div>
+		      <div class="tab_m">
+
+
+		      </div>
+			</div>
+			<!--Start Tabcontent 3-->
+			<div id="tabcontent3">
+              <div class="tab_pic"><ul class="tw195">
+				  <li class="pic"><a href="/n2/2016/0331/c367652-28057224.html" target="_blank"><img src="/NMediaFile/2016/0331/LOCAL201603311537000356050341149.jpg" width="300" height="225" border="0" alt="铜梁改革让共青团活力四射 " data-bd-imgshare-binded="1"></a></li>
+				  <li class="text"><a href="/n2/2016/0331/c367652-28057224.html" target="_blank">铜梁改革让共青团活力四射&nbsp;</a></li>
+				  <li class="trans_layer"></li>
+		        </ul>
+<ul class="tw195">
+				  <li class="pic"><a href="/n2/2016/0329/c367652-28033404.html" target="_blank"><img src="/NMediaFile/2016/0329/LOCAL201603290826000431634595705.jpg" width="300" height="225" border="0" alt="库区航运生机勃勃" data-bd-imgshare-binded="1"></a></li>
+				  <li class="text"><a href="/n2/2016/0329/c367652-28033404.html" target="_blank">库区航运生机勃勃</a></li>
+				  <li class="trans_layer"></li>
+		        </ul>
+
+</div>
+		      <div class="tab_m">
+			    <div class="smalltt"><h2><a href="/n2/2016/0401/c367651-28065292.html" target="_blank">重庆市第25期区县部门主要领导干部进修班到重庆市廉政教育基地接受警示教育 </a></h2>
+         <p>&nbsp;&nbsp;&nbsp;&nbsp;　　3月29日，重庆市第25期区县部门主要领导干部进修班全体学员前往铁山坪，参观重庆市廉政教育基地，接受廉政警示教育，进一步强化党员干部的党性、法纪、廉洁意识。</p>
+
+</div>
+                <ul class="list360"><li><a href="/n2/2016/0331/c367650-28057192.html" target="_blank">江北区“云创空间”入选国家级众创空间</a></li>
+<li><a href="/n2/2016/0331/c367650-28056740.html" target="_blank">綦江区着力打造重庆交通用铝产业基地</a></li>
+<li><a href="/n2/2016/0331/c365411-28056697.html" target="_blank">奉节电商网络脐橙节4月1日启幕 网购送“大礼”</a></li>
+<li><a href="/n2/2016/0329/c367650-28033623.html" target="_blank">“重庆武隆”品牌价值逾90亿元</a></li>
+<li><a href="/n2/2016/0329/c367650-28033456.html" target="_blank">江北成立群团公益基金会</a></li>
+<li><a href="/n2/2016/0328/c367650-28031536.html" target="_blank">当“钢琴”遇见“油画” </a></li>
+
+</ul>
+		      </div>
+			</div>
+			<!--Start Tabcontent 4-->
+			<div id="tabcontent4">
+
+		      <div class="tab_m">
+
+                <ul class="list360"><li><a href="/n/2015/1203/c367643-27241206.html" target="_blank">双十一生鲜销售成黑马，农村电商如何进军生鲜市场？</a></li>
+
+</ul>
+		      </div>
+			</div>
+			<!--Start Tabcontent 5-->
+			<div id="tabcontent5">
+
+		      <div class="tab_m">
+
+
+		      </div>
+			</div>
+			<!--Start Tabcontent 6-->
+			<div id="tabcontent6">
+
+		      <div class="tab_m">
+
+
+		      </div>
+			</div>
+			<!--Start Tabcontent 7-->
+			<div id="tabcontent7">
+
+		      <div class="tab_m">
+
+
+		      </div>
+			</div>
+	</div>
+	<div class="blank30"></div>
+
+	</div>
+	</td>
+    <td align="left" valign="top" width="320"><div id="right">
+
+		<div class="blank10"></div>
+  	<div class="r_tt2"><h2><a href="http://liuyan.people.com.cn/index.php?gid=33" target="_blank">给地方领导留言</a></h2></div>
+  <div class="r_box"><div class="con_ld">
+	    <div class="pic65"><a href="http://liuyan.people.com.cn/index.php?gid=33" target="_blank"><img src="/NMediaFile/2014/1028/LOCAL201410281754302564767097808.jpg" width="75" height="80" border="0" data-bd-imgshare-binded="1"></a></div>
+		<div class="ldr_ly"><div class="ldr_ly">
+		  <h4>孙政才</h4>
+		  <h5>重庆市委书记</h5>
+		  <h3><a href="http://liuyan.people.com.cn/index.php?gid=33" target="_blank" title="给重庆市委书记孙政才留言"><img src="http://cq.people.com.cn/images_2013/wyly.jpg" alt="给重庆市委书记孙政才留言" data-bd-imgshare-binded="1"></a></h3>
+		</div></div>
+   </div>
+    <div class="blank10"></div>
+<div class="con_ld">
+	    <div class="pic65"><a href="http://liuyan.people.com.cn/index.php?gid=33" target="_blank"><img src="/NMediaFile/2014/1028/LOCAL201410281754309465823593584.jpg" width="75" height="80" border="0" data-bd-imgshare-binded="1"></a></div>
+		<div class="ldr_ly"><div class="ldr_ly">
+		  <h4>黄奇帆</h4>
+		  <h5>重庆市市长</h5>
+		  <h3><a href="http://liuyan.people.com.cn/index.php?gid=33" target="_blank" title="给重庆市市长黄奇帆留言"><img src="http://cq.people.com.cn/images_2013/wyly.jpg" alt="给重庆市市长黄奇帆留言" data-bd-imgshare-binded="1"></a> </h3>
+		</div></div>
+   </div>
+    <div class="blank10"></div>
+</div>
+  		<div class="blank10"></div>
+  <div class="r_tt"><h2><a href="http://cq.people.com.cn/GB/365402/" target="_blank" title="重庆新闻">重庆新闻</a></h2></div>
+      <div class="r_box2">
+
+        <ul class="r_l12 pb10"><li><a href="/n2/2016/0401/c365402-28059423.html" target="_blank">联合签证申请中心在渝设立 可受理八个申根国签证</a></li>
+<li><a href="/n2/2016/0401/c365402-28059415.html" target="_blank">重庆:清明节400万人出行祭扫 请你避开主城堵点 </a></li>
+<li><a href="/n2/2016/0401/c365402-28059380.html" target="_blank">陈坤携《火锅英雄》回到家乡 想让全世界知道重庆</a></li>
+<li><a href="/n2/2016/0401/c365402-28059345.html" target="_blank">补换领驾照不用再跑回核发地办 四大亮点值得关注</a></li>
+
+</ul>
+      </div>
+  		<div class="blank10"></div>
+  <div class="r_tt"><h2><a href="http://cq.people.com.cn/video-web/" target="_blank" title="人民网直播重庆">人民网直播重庆</a></h2></div>
+  <div class="r_box2">
+    <div class="blank10"></div>
+    <div class="r_piclist">
+      <ul><li><a href="/n2/2016/0126/c362578-27633639.html" target="_blank"><img src="/NMediaFile/videotemp/201601/26/LOCALVIDEO20160126211752F6972012688.jpg" width="134" height="95" border="0" alt="委员声音：为城市过街天桥加顶棚 彰显人文关怀" data-bd-imgshare-binded="1"></a><h4><a href="/n2/2016/0126/c362578-27633639.html" target="_blank">委员声音：为城市...</a></h4></li>
+<li><a href="/n2/2016/0126/c362578-27633638.html" target="_blank"><img src="/NMediaFile/videotemp/201601/26/LOCALVIDEO20160126211752F6114482155.jpg" width="134" height="95" border="0" alt="委员声音：重视和保护青少年视力健康刻不容缓" data-bd-imgshare-binded="1"></a><h4><a href="/n2/2016/0126/c362578-27633638.html" target="_blank">委员声音：重视和...</a></h4></li>
+<li><a href="/n2/2016/0126/c362578-27633471.html" target="_blank"><img src="/NMediaFile/videotemp/201601/26/LOCALVIDEO20160126200052F4424423169.jpg" width="134" height="95" border="0" alt="重庆三部门负责人谈“十三五”规划" data-bd-imgshare-binded="1"></a><h4><a href="/n2/2016/0126/c362578-27633471.html" target="_blank">重庆三部门负责人...</a></h4></li>
+<li><a href="/n2/2016/0126/c362578-27625285.html" target="_blank"><img src="/NMediaFile/videotemp/201601/26/LOCALVIDEO20160126010020F1967835358.jpg" width="134" height="95" border="0" alt="李建春：巴南今后五年要打好“殷实小康”这一仗" data-bd-imgshare-binded="1"></a><h4><a href="/n2/2016/0126/c362578-27625285.html" target="_blank">李建春：巴南今后...</a></h4></li>
+
+</ul>
+    </div>
+  </div>
+  <div class="blank10"></div>
+  		<div class="r_tt"><h2><a href="http://cq.people.com.cn/GB/367698/" target="_blank" title="图片频道">图片新闻</a></h2></div>
+  <div class="r_box2">
+    <div class="blank10"></div>
+	<div class="con134"><ul class="tw134">
+		<li class="pic"><a href="/n2/2016/0401/c367698-28059517.html" target="_blank"><img src="/NMediaFile/2016/0401/LOCAL201604010734000325947479853.jpg" width="134" height="95" border="0" alt="习近平会见丹麦首相拉斯穆森" data-bd-imgshare-binded="1"></a></li>
+		<li class="text"><a href="/n2/2016/0401/c367698-28059517.html" target="_blank">习近平会见丹麦首...</a></li>
+		<li class="trans_layer"></li>
+	  </ul>
+<ul class="tw134">
+		<li class="pic"><a href="/n2/2016/0401/c367698-28059488.html" target="_blank"><img src="/NMediaFile/2016/0401/LOCAL201604010733000057021887219.jpg" width="134" height="95" border="0" alt="清明节将至 南京雨花台布置花坛“缅怀”先烈" data-bd-imgshare-binded="1"></a></li>
+		<li class="text"><a href="/n2/2016/0401/c367698-28059488.html" target="_blank">清明节将至&nbsp;南京...</a></li>
+		<li class="trans_layer"></li>
+	  </ul>
+<ul class="tw134">
+		<li class="pic"><a href="/n2/2016/0401/c367698-28059142.html" target="_blank"><img src="/NMediaFile/2016/0401/LOCAL201604010708000487326967964.jpg" width="134" height="95" border="0" alt="重庆自主开发新型单轨道岔设备安装在碧津站" data-bd-imgshare-binded="1"></a></li>
+		<li class="text"><a href="/n2/2016/0401/c367698-28059142.html" target="_blank">重庆自主开发新型...</a></li>
+		<li class="trans_layer"></li>
+	  </ul>
+<ul class="tw134">
+		<li class="pic"><a href="/n2/2016/0401/c367698-28059105.html" target="_blank"><img src="/NMediaFile/2016/0401/LOCAL201604010702000519512775409.jpg" width="134" height="95" border="0" alt="江津几江长江大桥合龙 预计6月28日通车" data-bd-imgshare-binded="1"></a></li>
+		<li class="text"><a href="/n2/2016/0401/c367698-28059105.html" target="_blank">江津几江长江大桥...</a></li>
+		<li class="trans_layer"></li>
+	  </ul>
+
+</div>
+  </div>
+  <div class="blank10"></div>
+
+
+  		<div class="blank10"></div>
+   <div class="r_tt"><h2>微博关注</h2></div>
+   <div class="r_wb"><iframe width="100%" height="100" class="share_self" frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&amp;width=0&amp;height=100&amp;fansRow=0&amp;ptype=1&amp;speed=0&amp;skin=1&amp;isTitle=0&amp;noborder=0&amp;isWeibo=1&amp;isFans=0&amp;uid=1887449931&amp;verifier=a4b838a0&amp;dpc=1"></iframe></div>
+</div>
+<script language="javascript">
+<!--
+function cqpeople_changesfunction_right2013_pics_22(id1,id2)
+{
+id1status=document.getElementById(id1).style.display;
+id2status=document.getElementById(id2).style.display;
+if (id1status=='block'){
+	document.getElementById(id1).style.display = 'none';
+	$("#" + id2).fadeIn(1000);
+	document.getElementById(id2).style.display = 'block';}
+if (id2status=='block'){
+	document.getElementById(id2).style.display = 'none';
+	$("#" + id1).fadeIn(1000);
+	document.getElementById(id1).style.display = 'block';}
+}
+
+$(function () {setInterval(function (){cqpeople_changesfunction_right2013_pics_22("sjjy-b","sjjy-c");},4000);});
+-->
+</script>
+</td>
+  </tr>
+</tbody></table>
+<!--------footer-------->
+<div class="blank30"></div>
+<div id="footer">
+  <div class="footernav"><h3><a href="/" target="_blank">首页</a> - <a href="http://cq.people.com.cn/GB/365401/" target="_blank">原创</a> - <a href="http://cq.people.com.cn/GB/365402/" target="_blank">重庆</a> - <a href="http://cq.people.com.cn/GB/365407/" target="_blank">旗帜</a> - <a href="http://cq.people.com.cn/GB/365403/" target="_blank">国内</a> - <a href="http://cq.people.com.cn/GB/365404/" target="_blank">国际</a> - <a href="http://cq.people.com.cn/GB/365405/" target="_blank">社会</a> - <a href="http://cq.people.com.cn/GB/365408/" target="_blank">评论</a> - <a href="http://cq.people.com.cn/GB/365409/" target="_blank">娱乐</a> - <a href="http://cq.people.com.cn/GB/365410/" target="_blank">体育</a> - <a href="http://cq.people.com.cn/GB/365415/" target="_blank">
+房产</a> - <a href="http://cq.people.com.cn/GB/365413/" target="_blank">金融</a> - <a href="http://cq.people.com.cn/GB/365412/" target="_blank">企业</a> - <a href="http://cq.people.com.cn/GB/371335/" target="_blank">教育</a> - <a href="http://cq.people.com.cn/GB/365406/" target="_blank">科教</a> - <a href="http://cq.people.com.cn/GB/365418/" target="_blank">旅游</a> - <a href="http://cq.people.com.cn/GB/365416/" target="_blank">汽摩</a> - <a href="http://mcq.people.com.cn/pic-web/" target="_blank">图片</a> - <a href="http://mcq.people.com.cn/video-web/" target="_blank">人民网直播重庆</a> - <a href="http://cq.people.com.cn/GB/365425/" target="_blank">人民日报看重庆</a></h3>
+  </div>
+  <div class="blank15"></div>
+  <div class="footerbox">
+    <div class="footerbox_l">
+	  <div class="footertext"><h5><a href="http://www.people.com.cn/GB/50142/104580/index.html" target="_blank">人民日报社概况</a> | <a href="http://www.people.com.cn/GB/50142/353480/353481/index.html" target="_blank">关于人民网</a> | <a href="http://www.people.com.cn/GB/1018/22259/6138836.html" target="_blank">网站声明</a> | <a href="http://www.people.com.cn/GB/50142/50459/57871/4064597.html" target="_blank">网站律师</a> | <a href="http://kf.people.com.cn/" target="_blank">呼叫中心</a></h5>
+<h5><a href="http://www.people.com.cn/img/2011zzzs/2011icp.htm" target="_blank">京ICP证000006号</a> | 京公网安备110000000008号 | <a href="http://www.people.com.cn/img/2011zzzs/2011xxwlcb.htm" target="_blank">网上传播视听节目许可证（0104065）</a> | <a href="http://tv.people.com.cn/GB/6983227.html" target="_blank">中国互联网视听节目服务自律公约</a></h5>
+<h5>地址：重庆市北部新区星光大道62号海王星大厦B区5楼 | 电话：023-67885665 023-67885660 | 传真：023-67885600 </h5>
+<h5></h5>
+<h6>人 民 网 版 权 所 有 ，未 经 书 面 授 权 禁 止 使 用</h6>
+<h6>Copyright © 1997-2016 by www.people.com.cn. all rights reserved</h6></div>
+    </div>
+    <div class="footerbox_r">
+  		<div class="footerlinks"><select size="1" name="D1" class="linkstext" onchange="window.open(this.options[this.selectedIndex].value,'_blank')"><option selected="">-- 人民网地方频道 --</option><option value="http://bj.people.com.cn/">北京</option><option value="http://tj.people.com.cn/">天津</option><option value="http://he.people.com.cn/">河北</option><option value="http://sx.people.com.cn/">山西</option><option value="http://nm.people.com.cn/">内蒙古</option><option value="http://ln.people.com.cn/">辽宁</option><option value="http://jl.people.com.cn/">吉林</option><option value="http://hl.people.com.cn/">黑龙江</option><option value="http://sh.people.com.cn/">上海</option><option value="http://sd.people.com.cn/">山东</option><option value="http://ah.people.com.cn/">安徽</option><option value="http://zj.people.com.cn/">浙江</option><option value="http://fj.people.com.cn/">福建</option><option value="http://js.people.com.cn/">江苏</option><option value="http://jx.people.com.cn/">江西</option><option value="http://gd.people.com.cn/">广东</option><option value="http://gx.people.com.cn/">广西</option><option value="http://hi.people.com.cn/">海南</option><option value="http://hb.people.com.cn/">湖北</option><option value="http://hn.people.com.cn/">湖南</option><option value="http://ha.people.com.cn/">河南</option><option value="http://cq.people.com.cn/">重庆</option><option value="http://sc.people.com.cn/">四川</option><option value="http://yn.people.com.cn/">云南</option><option value="http://gz.people.com.cn/">贵州</option><option value="http://www.chinatibetnews.com/">西藏</option><option value="http://sn.people.com.cn/">陕西</option><option value="http://gs.people.com.cn/">甘肃</option><option value="http://xj.people.com.cn/">新疆</option><option value="http://qh.people.com.cn/">青海</option><option value="http://nx.people.com.cn/">宁夏</option><option>港澳</option><option value="http://tw.people.com.cn/">台湾</option></select></div>
+
+	  <div class="footerlinks"><select size="1" name="D2" class="linkstext" onchange="window.open(this.options[this.selectedIndex].value,'_blank')"><option selected="">-- 人民日报报系 --</option><option value="http://paper.people.com.cn/rmrb/index.html">人民日报</option>
+<option value="http://paper.people.com.cn/rmrbhwb/paperindex.htm">海外版</option>
+<option value="http://paper.people.com.cn/xwzx/paperindex.htm">新闻战线</option>
+<option value="http://paper.people.com.cn/xaq/paperindex.htm">新安全</option>
+<option value="http://paper.people.com.cn/smsb/paperindex.htm">生命时报</option>
+<option value="http://www.people.com.cn/paper/tx_hqrw/tx_hqrw.html">环球人物</option>
+<option value="http://paper.people.com.cn/rmlt/paperindex.htm">人民论坛</option>
+<option value="http://paper.people.com.cn/jksb/paperindex.htm">健康时报</option>
+<option value="http://epaper.stcn.com/">证券时报</option>
+<option value="http://paper.people.com.cn/zgnyb/paperindex.htm">中国能源报</option>
+<option value="http://paper.people.com.cn/mszk/paperindex.htm">民生周刊</option>
+<option value="http://paper.people.com.cn/gjjrb/paperindex.htm">国际金融报</option>
+<option value="http://paper.people.com.cn/rmwz/paperindex.htm">人民文摘</option>
+<option value="http://paper.people.com.cn/fcyym/paperindex.htm">讽刺与幽默</option>
+<option value="http://history.people.com.cn/GB/198819/index.html">国家人文历史</option>
+<option value="http://paper.people.com.cn/zgjjzk/paperindex.htm">中国经济周刊</option>
+<option value="http://www.cnautonews.com/">汽车网</option>
+<option value="http://www.marketdaily.com.cn/">市场网</option>
+</select></div>
+
+	  <div class="footerlinks"><select size="1" name="D4" class="linkstext" onchange="window.open(this.options[this.selectedIndex].value,'_blank')"><option selected="">-- 重庆主要媒体 --</option><option value="http://www2.cqnews.net/showpdf/index.cqx?name=重庆日报">重庆日报</option><option value="http://www.cqwb.com.cn">重庆晚报</option><option value="http://www.cqcb.com">重庆晨报</option><option value="http://www.chinacqsb.com">重庆商报</option><option value="http://www.chongqingtimes.com.cn/">重庆时报</option><option value="http://www.cqqn.com/">重庆青年报</option><option value="http://www.newoo.com/">新女报</option><option value="http://www.cqdsrb.com/">都市热报</option><option value="http://www.cqtoday.cq.cn/">今日重庆</option><option value="http://www.shangjie.biz/">商界在线</option><option value="http://www.ccqtv.com/">重庆电视台</option><option value="http://www.cqnews.net">华龙网</option></select></div>
+
+	  <div class="footerlinks"><select size="1" name="D3" class="linkstext" onchange="window.open(this.options[this.selectedIndex].value,'_blank')"><option selected="">-- 重庆机构 --</option><option value="http://www.cq.gov.cn/">市政府公众信息</option><option value="http://www.rd.cq.gov.cn/">市人大</option><option value="http://www.cqzx.gov.cn/">市政协</option><option value="http://www.cqjcy.gov.cn/">市人民检察院</option><option value="http://www.cqcourt.gov.cn/">市人民法院</option><option value="http://www.cqdpc.gov.cn/">市发改委</option><option value="http://www.cqec.gov.cn/">市经委</option><option value="http://www.cqedu.gov.cn/">市教委</option><option value="http://www.ctin.ac.cn/">市科委</option><option value="http://www.cqga.gov.cn/">市公安局</option><option value="http://jsf.cq.gov.cn/">市司法局</option><option value="http://jcz.cq.gov.cn/">市财政局</option><option value="http://www.cqpa.gov.cn/">市人事局</option><option value="http://www.cqldbz.gov.cn/">市劳动保障局</option><option value="http://www.cqgtfw.gov.cn/">市国土房管局</option><option value="http://www.ccc.gov.cn/">市建委</option><option value="http://www.cqupb.gov.cn/">市规划局</option><option value="http://wsz.cq.gov.cn/">市政管理委</option><option value="http://www.cqjt.gov.cn/">市交委</option><option value="http://www.cqit.gov.cn/">市信产局</option><option value="http://www.cqwater.gov.cn/">市水利局</option><option value="http://www.cqagri.gov.cn/">市农业局</option><option value="http://wsy.cq.gov.cn/">市商委</option><option value="http://www.ft.cq.cn/">市外经贸委</option><option value="http://www.cqcrtv.gov.cn/">市文广局</option><option value="http://www.cqwsj.gov.cn/">市卫生局</option><option value="http://www.cqrk.gov.cn/">市人口计生委</option><option value="http://jsj.cq.gov.cn/">市审计局</option><option value="http://bws.cq.gov.cn/">市政府外事办</option><option value="http://www.sasaccq.gov.cn/">市国资委</option><option value="http://www.cq-l-tax.gov.cn/">市地税局</option><option value="http://www.cepb.gov.cn/">市环保局</option><option value="http://www.cqtj.gov.cn/">市统计局</option><option value="http://www.cqgs12315.cn/">市工商局</option><option value="http://www.cqppb.gov.cn/">市新闻出版局</option><option value="http://jliny.cq.gov.cn/">市林业局</option><option value="http://www.cqzj.gov.cn/">市质监局</option><option value="http://www.cqda.gov.cn/">市药监局</option><option value="http://www.cqta.gov.cn/">市旅游局</option><option value="http://jls.cq.gov.cn/">市粮食局</option></select></div>
+
+	  <div class="footerlinks"><select size="1" name="D5" class="linkstext" onchange="window.open(this.options[this.selectedIndex].value,'_blank')"><option selected="">-- 合作站点 --</option><option value="http://www.ccpc.cq.cn/">重庆人大</option><option value="http://www.cq.gov.cn/">重庆市政府公众信息网</option><option value="http://cqzx.gov.cn/">重庆政协</option><option value="http://cqfy.chinacourt.org/">重庆法院网</option><option value="http://www.cqyzfy.gov.cn/">重庆一中法院</option><option value="http://www.cqsy.org/">重庆社会主义学院</option><option value="http://www.hongyan.info/">红岩联线</option><option value="http://cq.xinhuanet.com/">新华网重庆频道</option><option value="http://www.cqnews.net/">华龙网</option><option value="http://www.cq.chinanews.com.cn/">重庆新闻网</option><option value="http://www.cqcb.com/">重庆晨报网</option><option value="http://www.cqwb.com.cn/">重庆晚报网</option><option value="http://online.cq.cn/">重庆热线</option><option value="http://www.cqca.gov.cn/">重庆市通信管理局</option><option value="http://www.cepb.gov.cn/">重庆环境保护</option><option value="http://www.cqrcb.com/">重庆农村商业银行</option><option value="http://www.caistv.com/">商界财视网</option><option value="http://123.sogou.com/">搜狗网址</option><option value="http://www.cqsalt.com/">重庆盐业信息网</option><option value="http://www.koy.com">KOY.COM</option><option value="http://mzh.china5000.cn/">民族魂</option><option value="http://www.cn6154.com/">赛乐网</option><option value="http://www.dmguo.com/">动漫国</option><option value="http://www.cqfz.org.cn/">重庆发展网</option><option value="http://www.csts.net.cn/">重庆市大型科学仪器资源共享平台</option><option value="http://www.cqdxc.gov.cn/">重庆大学城</option><option value="http://news.swu.edu.cn/">西南大学资讯网</option><option value="http://www.cqyzfy.gov.cn/">重庆市一中院</option><option value="http://www.pacq.gov.cn/">平安重庆网</option><option value="http://www.cqst.org.cn/">重庆少年儿童图书馆</option><option value="http://www.tg630.com/">重庆630团购网</option><option value="http://www.cq7.cn/">7度重庆社区</option><option value="http://www.cq-ce.cn/">重庆经济网</option><option value="http://cq.kankan.com/">看看重庆</option></select></div>
+	</div>
+</div>
+  <div class="blank15"></div>
+  <div class="footerbox2">
+    <div class="fo_kfd"><div class="footerkfd">
+<ul>
+<li style="margin-left:0;"><p><span class="upsver">V1.0.5</span></p>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app1_1').style.display='none';document.getElementById
+('app1_2').style.display='block';"><img id="app1_1" style="display:block;" src="/img/LOCAL/2014/06/112486/images/ydimg1.jpg" alt="iphone客户端" data-bd-imgshare-binded="1"></a>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app1_2').style.display='none';document.getElementById
+('app1_1').style.display='block';"><img id="app1_2" style="display:none;" src="http://mcq.people.com.cn/m/2codepng/ios.png" width="79" height="79" data-bd-imgshare-binded="1"></a>
+</li>
+<li><p><span class="upsver">V1.0.5</span></p>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app2_1').style.display='none';document.getElementById
+('app2_2').style.display='block';"><img id="app2_1" style="display:block;" src="/img/LOCAL/2014/06/112486/images/ydimg2.jpg" alt="ipad客户端" data-bd-imgshare-binded="1"></a>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app2_2').style.display='none';document.getElementById
+('app2_1').style.display='block';"><img id="app2_2" style="display:none;" src="http://mcq.people.com.cn/m/2codepng/ios.png" width="79" height="79" data-bd-imgshare-binded="1"></a>
+</li>
+<li><p><span class="upsver">V1.0.5</span></p>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app6_1').style.display='none';document.getElementById
+('app6_2').style.display='block';"><img id="app6_1" style="display:block;" src="/img/LOCAL/2014/06/112486/images/ydimg6.jpg" alt="wp8手机客户端" data-bd-imgshare-binded="1"></a>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app6_2').style.display='none';document.getElementById
+('app6_1').style.display='block';"><img id="app6_2" style="display:none;" src="http://mcq.people.com.cn/m/2codepng/wp8.png" width="79" height="79" data-bd-imgshare-binded="1"></a>
+</li>
+<li><p><span class="upsver">V1.0.5</span></p>
+<a href="http://apps.microsoft.com/windows/app/6b5d21f9-a8b3-41fe-8ce8-349928bb9639" target="_blank"><img src="/img/LOCAL/2014/06/112486/images/ydimg5.jpg" alt="win8客户端" data-bd-imgshare-binded="1"></a>
+</li>
+<li><p><span class="upsver">V2.2.0</span></p>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app4_1').style.display='none';document.getElementById
+('app4_2').style.display='block';"><img id="app4_1" style="display:block;" src="/img/LOCAL/2014/06/112486/images/ydimg4.jpg" alt="andriod手机客户端" data-bd-imgshare-binded="1"></a>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app4_2').style.display='none';document.getElementById
+('app4_1').style.display='block';"><img id="app4_2" style="display:none;" src="http://mcq.people.com.cn/m/2codepng/android_1.png" width="79" height="79" data-bd-imgshare-binded="1"></a>
+</li>
+<li><p><span class="upsver">V1.8.5</span></p>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app3_1').style.display='none';document.getElementById
+('app3_2').style.display='block';"><img id="app3_1" style="display:block;" src="/img/LOCAL/2014/06/112486/images/ydimg3.jpg" alt="andriod平板客户端" data-bd-imgshare-binded="1"></a>
+<a style="cursor:hand" onclick="javascript:document.getElementById('app3_2').style.display='none';document.getElementById
+('app3_1').style.display='block';"><img id="app3_2" style="display:none;" src="http://mcq.people.com.cn/m/2codepng/android_2.png" width="79" height="79" data-bd-imgshare-binded="1"></a>
+</li>
+</ul>
+  </div>
+      <div class="info_khd">·如何安装：苹果|微软在其官方应用商店、安卓手机在91助手中搜索“人民网重庆”；
+或点击图标获得二维码<br>·我们也欢迎通过手机|平板的浏览器直接访问域名cq.people.com.cn，自动依照您的设备呈现最佳的
+浏览体验</div>
+<script type="text/javascript">(function(){document.write(unescape('%3Cdiv id="bdcs"%3E%3C/div%3E'));var bdcs = document.createElement('script');bdcs.type = 'text/javascript';bdcs.async = true;bdcs.src = 'http://znsv.baidu.com/customer_search/api/js?sid=5102689337316652524' + '&plate_url=' + encodeURIComponent(window.location.href) + '&t=' + Math.ceil(new Date()/3600000);var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bdcs, s);})();</script><div id="bdcs"><div class="bdcs-container"><meta http-equiv="x-ua-compatible" content="IE=9">                                     <!-- 侧滑式 -->          <div id="sliding-searchbox" class="8 sliding-searchbox-one" style="position: fixed; top: 150px;">              <form action="http://zhannei.baidu.com/cse/search" method="get" target="_blank" class="bdcs-search-form" id="sliding-search-form">                  <div id="sliding-box-detail">                      <div id="sliding-icon-left"></div>                      <div id="sliding-back-right"></div>                      <div class="sliding-box-item" id="sliding-box-item">                          <div class="sliding-box-meun bdcs-clearfix" id="sliding-box-meun">                  <input type="text" name="q" class="bdcs-search-form-input" id="sliding-search-form-input" placeholder="请输入关键词"><input type="submit" class="bdcs-search-form-submit  " id="sliding-search-form-submit" value="搜索">                           <input type="hidden" name="s" value="5102689337316652524">                                                                                <input type="hidden" name="ie" value="gbk">                                                                                    </div>              </div>              <div id="sliding-back"></div>              <div id="sliding-icon-right" style="display: block;"> </div>          </div>      </form>  </div>            </div></div></div>
+    <div class="fo_tgjs"><h4><a href="mailto:cq_people@qq.com"><img src="http://mcq.people.com.cn/images_2013/tgts2.jpg" alt="投稿/投诉" data-bd-imgshare-binded="1"></a></h4>
+	  <h4><a href="mailto:cqpeople@126.com"><img src="http://mcq.people.com.cn/images_2013/jshz2.jpg" alt="技术合作" data-bd-imgshare-binded="1"></a></h4></div>
+  </div>
+</div>
+<div class="AdLayer"><a href="#top"><img src="/img/LOCAL/2014/06/112486/images/goto_top.gif" data-bd-imgshare-binded="1"></a></div>
+<img src="http://58.68.146.44:8000/f.gif?id=28065405" width="0" height="0" data-bd-imgshare-binded="1">
+<script language="javascript" src="/img/LOCAL/2014/06/112486/js/index_changes.js"></script>
+<script src="/css/2010tianrun/webdig_test.js" language="javascript" type="text/javascript"></script><div id="BAIDU_DSPUI_FLOWBAR" fixed="true" style="height: 70px; position: fixed; width: 100%; z-index: 2147483647; zoom: 1; overflow: visible; bottom: 0px; margin-top: 0px; left: 0px; right: auto;"><iframe src="http://entry.baidu.com/rp/home?ifr=infr:1_cross:0_drs:1_pcs:1280x592_pss:1265x2331_cfv:0_cpl:5_chi:1_cce:1_cec:GBK_tlm:1459497192_ecd:1_adw:1265x50&amp;type=flowbar&amp;fixed_tpl=2&amp;di=u2092251&amp;rsi0=auto&amp;rsi1=50&amp;n=1&amp;title=%E5%9F%8E%E5%8F%A3%EF%BC%9A2015%E5%B9%B4%E8%BF%918%E6%88%90%E8%B4%AB%E5%9B%B0%E6%88%B7%E8%8E%B7%E5%85%AC%E7%9B%8A%E6%9E%97%E7%94%9F%E6%80%81%E6%95%88%E7%9B%8A%E8%A1%A5%E5%81%BF--%E9%87%8D%E5%BA%86%E8%A7%86%E7%AA%97--%E4%BA%BA%E6%B0%91%E7%BD%91&amp;ltu=http%3A%2F%2Fcq.people.com.cn%2Fn2%2F2016%2F0401%2Fc365411-28065405.html&amp;ref=&amp;pageWidth=1265&amp;pageHeight=592&amp;t=1459998435586&amp;rsi0=1265&amp;rsi1=50" style="height: 70px; background-color: transparent;" width="100%" height="100%" align="center,center" marginwidth="0" marginheight="0" scrolling="no" frameborder="0" allowtransparency="true"></iframe><div style="position: absolute; opacity: 0.4; width: 40px; height: 20px; z-index: 111; top: -20px; right: 0px; background: rgb(0, 0, 0);"></div><div style="position: absolute; width: 40px; height: 20px; line-height: 20px; cursor: pointer; text-align: center; color: rgb(255, 255, 255); font-size: 12px; z-index: 112; top: -20px; right: 0px;">关闭</div></div><script id="tr_statobj" src="http://cl2.webterren.com/webdig.js?z=15" type="text/javascript"></script><script type="text/javascript"> wd_paramtracker('_wdxid=000000000000000000000000000000000000000000');</script>
+<div style="position:absolute; width:20px; height:20px; visibility: hidden"><script src="http://s47.cnzz.com/stat.php?id=2038604&amp;web_id=2038604" language="JavaScript"></script><script src="http://c.cnzz.com/core.php?web_id=2038604&amp;t=z" charset="utf-8" type="text/javascript"></script><a href="http://www.cnzz.com/stat/website.php?web_id=2038604" target="_blank" title="站长统计">站长统计</a></div>
+
+<audio controls="controls" style="display: none;"></audio><iframe frameborder="0" id="bdSharePopup_selectshare1459998436058bg" class="bdselect_share_bg" style="display:none;"></iframe><div id="bdSharePopup_selectshare1459998436058box" style="display:none;" share-type="selectshare" class="bdselect_share_box" data-bd-bind="1459998436057"><div class="selectshare-mod-triangle"><div class="triangle-border"></div><div class="triangle-inset"></div></div><div class="bdselect_share_head"><span>分享到</span><a href="http://www.baidu.com/s?wd=&amp;tn=SE_hldp08010_vurs2xrp" class="bdselect_share_dialog_search" target="_blank"><i class="bdselect_share_dialog_search_i"></i><span class="bdselect_share_dialog_search_span">百度一下</span></a><a class="bdselect_share_dialog_close"></a></div><div class="bdselect_share_content"><ul class="bdselect_share_list bdshare-button-style1-32"><div class="bdselect_share_partners"></div><a href="#" class="bds_more" data-cmd="more"></a></ul></div></div><div id="bdimgshare_1459998436084" class="sr-bdimgshare sr-bdimgshare-list sr-bdimgshare-16 sr-bdimgshare-black" style="height:36px;line-height:26px;font-size:12px;width:autopx;display:none;" data-bd-bind="1459998436083"><div class="bdimgshare-bg"></div><div class="bdimgshare-content bdsharebuttonbox bdshare-button-style0-16"><label class="bdimgshare-lbl">分享到：</label><a href="#" onclick="return false;" class="bds_sqq" data-cmd="sqq" hidefocus=""></a><a href="#" onclick="return false;" class="bds_weixin" data-cmd="weixin" hidefocus=""></a><a href="#" onclick="return false;" class="bds_tsina" data-cmd="tsina" hidefocus=""></a><a href="#" onclick="return false;" class="bds_tqq" data-cmd="tqq" hidefocus=""></a><a href="#" onclick="return false;" class="bds_qzone" data-cmd="qzone" hidefocus=""></a><a href="#" onclick="return false;" class="bds_renren" data-cmd="renren" hidefocus=""></a><a href="#" onclick="return false;" class="bds_more" data-cmd="more" hidefocus=""></a></div></div></body></html>'''
+
+
+def getHtml4():
+    return '''<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<title>千人采茶 齐游名山万亩生态茶园_云贵旅游地理网-中南偏西 精彩云贵</title>
+<link media="all" href="/templets/default/style/article.css" type="text/css" rel="stylesheet"><link media="all" href="/templets/default/style/header_footer.css" type="text/css" rel="stylesheet">
+<link media="all" href="/templets/default/style/css.css" type="text/css" rel="stylesheet">
+<link href="/templets/default/style/dedecms.css" rel="stylesheet" media="screen" type="text/css">
+<link href="/templets/default/style/top_hhw.css" type="text/css" rel="stylesheet">
+<meta content="千人,采茶,齐游,名山,万亩,生态,茶园" name="keywords">
+<meta content="春意盎然，仙茶飘香，4月2日清明小长假第一天，第十二届蒙顶山茶文化旅游节系列活动之一的蒙茶仙子春采茶活动在名山区中峰乡牛碾坪万亩生态观光茶园隆重举行，" 1000余人参与了体验活动。="" 本次活动由雅安市委农工委、雅安市名山区人民政府主办，四川蒙顶山茶业有限公司、四川省贸易学校协办。="" 踏春摄影="" 寻醉美茶仙子="" 清晨，牛碾坪万亩生态观光茶园笼罩在氤氲雾气中，满眼的油绿，被春雨滋润后的春茶，萌发出嫩绿的茶芽，散发出淡="" name="description">
+<meta content="MSHTML 6.00.2900.3676" name="GENERATOR">
+<script language="javascript" type="text/javascript" src="/include/dedeajax2.js"></script>
+<script language="javascript" type="text/javascript">
+<!--
+function CheckLogin(){
+	  var taget_obj = document.getElementById('_ajax_feedback');
+	  myajax = new DedeAjax(taget_obj,false,false,'','','');
+	  myajax.SendGet2("/member/ajax_feedback.php");
+	  DedeXHTTP = null;
+}
+function postBadGood(ftype,fid)
+{
+	var taget_obj = document.getElementById(ftype+fid);
+	var saveid = GetCookie('badgoodid');
+	if(saveid != null)
+	{
+		var saveids = saveid.split(',');
+		var hasid = false;
+		saveid = '';
+		j = 1;
+		for(i=saveids.length-1;i>=0;i--)
+		{
+			if(saveids[i]==fid && hasid) continue;
+			else {
+				if(saveids[i]==fid && !hasid) hasid = true;
+				saveid += (saveid=='' ? saveids[i] : ','+saveids[i]);
+				j++;
+				if(j==10 && hasid) break;
+				if(j==9 && !hasid) break;
+			}
+		}
+		if(hasid) { alert('您刚才已表决过了喔！'); return false;}
+		else saveid += ','+fid;
+		SetCookie('badgoodid',saveid,1);
+	}
+	else
+	{
+		SetCookie('badgoodid',fid,1);
+	}
+	myajax = new DedeAjax(taget_obj,false,false,'','','');
+	myajax.SendGet2("/plus/feedback.php?aid="+fid+"&action="+ftype+"&fid="+fid);
+}
+function postDigg(ftype,aid)
+{
+	var taget_obj = document.getElementById('newdigg');
+	var saveid = GetCookie('diggid');
+	if(saveid != null)
+	{
+		var saveids = saveid.split(',');
+		var hasid = false;
+		saveid = '';
+		j = 1;
+		for(i=saveids.length-1;i>=0;i--)
+		{
+			if(saveids[i]==aid && hasid) continue;
+			else {
+				if(saveids[i]==aid && !hasid) hasid = true;
+				saveid += (saveid=='' ? saveids[i] : ','+saveids[i]);
+				j++;
+				if(j==20 && hasid) break;
+				if(j==19 && !hasid) break;
+			}
+		}
+		if(hasid) { alert("您已经顶过该帖，请不要重复顶帖 ！"); return; }
+		else saveid += ','+aid;
+		SetCookie('diggid',saveid,1);
+	}
+	else
+	{
+		SetCookie('diggid',aid,1);
+	}
+	myajax = new DedeAjax(taget_obj,false,false,'','','');
+	var url = "/plus/digg_ajax.php?action="+ftype+"&id="+aid;
+	myajax.SendGet2(url);
+}
+function getDigg(aid)
+{
+	var taget_obj = document.getElementById('newdigg');
+	myajax = new DedeAjax(taget_obj,false,false,'','','');
+	myajax.SendGet2("/plus/digg_ajax.php?id="+aid);
+	DedeXHTTP = null;
+}
+function check(){
+		if(document.formsearch.searchtype.value=="")
+		document.formsearch.action="http://www.google.cn/custom"
+		else
+		document.formsearch.action="/plus/search.php"
+	}
+-->
+</script>
+<style type="text/css">#yddContainer{display:block;font-family:Microsoft YaHei;position:relative;width:100%;height:100%;top:-4px;left:-4px;font-size:12px;border:1px solid}#yddTop{display:block;height:22px}#yddTopBorderlr{display:block;position:static;height:17px;padding:2px 28px;line-height:17px;font-size:12px;color:#5079bb;font-weight:bold;border-style:none solid;border-width:1px}#yddTopBorderlr .ydd-sp{position:absolute;top:2px;height:0;overflow:hidden}.ydd-icon{left:5px;width:17px;padding:0px 0px 0px 0px;padding-top:17px;background-position:-16px -44px}.ydd-close{right:5px;width:16px;padding-top:16px;background-position:left -44px}#yddKeyTitle{float:left;text-decoration:none}#yddMiddle{display:block;margin-bottom:10px}.ydd-tabs{display:block;margin:5px 0;padding:0 5px;height:18px;border-bottom:1px solid}.ydd-tab{display:block;float:left;height:18px;margin:0 5px -1px 0;padding:0 4px;line-height:18px;border:1px solid;border-bottom:none}.ydd-trans-container{display:block;line-height:160%}.ydd-trans-container a{text-decoration:none;}#yddBottom{position:absolute;bottom:0;left:0;width:100%;height:22px;line-height:22px;overflow:hidden;background-position:left -22px}.ydd-padding010{padding:0 10px}#yddWrapper{color:#252525;z-index:10001;background:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ab20.png);}#yddContainer{background:#fff;border-color:#4b7598}#yddTopBorderlr{border-color:#f0f8fc}#yddWrapper .ydd-sp{background-image:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ydd-sprite.png)}#yddWrapper a,#yddWrapper a:hover,#yddWrapper a:visited{color:#50799b}#yddWrapper .ydd-tabs{color:#959595}.ydd-tabs,.ydd-tab{background:#fff;border-color:#d5e7f3}#yddBottom{color:#363636}#yddWrapper{min-width:250px;max-width:400px;}</style><script src="http://bdimg.share.baidu.com/static/js/logger.js?cdnversion=405604"></script><link href="http://bdimg.share.baidu.com/static/css/bdsstyle.css?cdnversion=20131219" rel="stylesheet" type="text/css"></head>
+<body><iframe frameborder="0" style="display: none;"></iframe><div id="bdshare_s" style="display: block;"><iframe id="bdsIfr" style="position:absolute;display:none;z-index:9999;" frameborder="0"></iframe><div id="bdshare_l" style="display: none;"><div id="bdshare_l_c"><h6>分享到</h6><ul><li><a href="#" class="bds_mshare mshare">一键分享</a></li><li><a href="#" class="bds_qzone qqkj">QQ空间</a></li><li><a href="#" class="bds_tsina xlwb">新浪微博</a></li><li><a href="#" class="bds_bdysc bdysc">百度云收藏</a></li><li><a href="#" class="bds_renren rrw">人人网</a></li><li><a href="#" class="bds_tqq txwb">腾讯微博</a></li><li><a href="#" class="bds_bdxc bdxc">百度相册</a></li><li><a href="#" class="bds_kaixin001 kxw">开心网</a></li><li><a href="#" class="bds_tqf txpy">腾讯朋友</a></li><li><a href="#" class="bds_tieba bdtb">百度贴吧</a></li><li><a href="#" class="bds_douban db">豆瓣网</a></li><li><a href="#" class="bds_tsohu shwb">搜狐微博</a></li><li><a href="#" class="bds_bdhome bdhome">百度新首页</a></li><li><a href="#" class="bds_sqq sqq">QQ好友</a></li><li><a href="#" class="bds_thx thx">和讯微博</a></li><li><a href="#" class="bds_more">更多...</a></li></ul><p><a href="#" class="goWebsite">百度分享</a></p></div></div></div>
+<div id="header">
+<div class="bar">
+<div class="sethome"><a href="">云贵旅游地理网</a>
+</div>
+<div class="login">
+ 请按这里把云贵旅游地理网-中南偏西 精彩云贵加入收藏：<a href="javascript:window.open('http://shuqian.qq.com/post?from=3&amp;title='+encodeURIComponent(document.title)+'&amp;uri='+encodeURIComponent(document.location.href)+'&amp;jumpback=2&amp;noui=1','favit','width=930,height=470,left=50,top=50,toolbar=no,menubar=no,location=no,scrollbars=yes,status=yes,resizable=yes');void(0)"><img src="/templets/default/images/qq.gif" alt="加入QQ收藏！" border="0" align="absmiddle"></a>
+<a href="javascript:location.href='http://www.google.com/bookmarks/mark?op=add&amp;bkmk='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title)"><img src="/templets/default/images/google.gif" alt="加入Google收藏！" border="0" align="absmiddle"></a>
+<a href="javascript:window.open('http://cang.baidu.com/do/add?it='+encodeURIComponent(document.title.substring(0,76))+'&amp;iu='+encodeURIComponent(location.href)+'&amp;fr=ien#nw=1','_blank','scrollbars=no,width=600,height=450,left=75,top=20,status=no,resizable=yes'); void 0"><img src="/templets/default/images/baidu.gif" alt="加入Baidu收藏！" border="0" align="absmiddle"></a>
+<a href="javascript:window.open('http://www.xianguo.com/service/submitfav/?link='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title),'_blank');void 0;"><img src="/templets/default/images/xianguo.gif" alt="添加到鲜果" border="0" align="absmiddle"></a>
+<a href="#" onclick="javascript:window.external.AddFavorite(document.URL,document.title);return false"><img src="/templets/default/images/ie.gif" alt="添加到我的收藏夹！" border="0" align="absmiddle"></a>
+<a href="/data/sitemap.html">网站地图</a>
+</div></div></div>
+<div class="toparea">
+<div class="logo">
+<h1><a title="云贵旅游地理网-中南偏西" 精彩云贵="" href="/">云贵旅游地理网-中南偏西 精彩云贵</a></h1></div>
+<div class="leftad">
+<script src="/plus/ad_js.php?aid=8" language="javascript"></script><a href="http://fam.cntgol.com"><img src="http://www.csunews.com/uploads/allimg/130106/1_1517389951.jpg" width="592" height="80" border="0"></a>
+
+</div>
+<div class="rightad">
+<script src="/plus/ad_js.php?aid=6" language="javascript"></script><a href="http://www.news.cn/politics/gygg/"><img src="http://www.csunews.com/uploads/allimg/130106/1_1519242561.jpg" width="150" height="80" border="0"></a>
+</div>
+<div class="rightad">
+
+</div></div>
+<div class="headmenu">
+<ul>
+  <li class="menu1">
+  <p><a href="/news/" target="_blank">新闻</a><a href="/news/yc" target="_blank">原创</a><a href="/news/jiaodian" target="_blank">焦点</a><a href="/news/shiye" target="_blank">视野</a>
+<br><a href="/news/dt" target="_blank">动态</a><a href="/news/qw" target="_blank">奇闻</a><a href="/news/gk" target="_blank">公告</a><a href="/news/hw" target="_blank">海外</a></p></li>
+  <li class="menu2">
+  <p><a href="/xing/" target="_blank">行走</a><a href="/xing/lushu" target="_blank">路书</a><a href="/xing/renwu" target="_blank">人物</a><a href="/xing/zijia" target="_blank">自驾</a><br><a href="/xing/tanxian" target="_blank">探险</a><a href="/xing/tubu" target="_blank">徒步</a><a href="/xing/meishi" target="_blank">美食</a><a href="/xing/baodian" target="_blank">宝典</a></p></li>
+  <li class="menu3">
+  <p><a href="/faxian" target="_blank">发现</a><a href="/faxian/wh/" target="_blank">文化</a><a href="/faxian/fq" target="_blank">风情</a>
+<a href="/faxian/juzhu" target="_blank">居住</a>
+<br>
+<a href="/faxian/st" target="_blank">生态</a><a href="/faxian/qx" target="_blank">气象</a><a href="/faxian/yiji" target="_blank">遗迹</a>
+<a href="/faxian/sc" target="_blank">山川</a>
+</p>
+</li>
+  <li class="menu4">
+  <p><a href="/fam" target="_blank">秘境</a><a href="/fam/kg" target="_blank">考古</a><a href="/fam/qy" target="_blank">奇异</a>
+<a href="/pic" target="_blank">图片</a><br><a href="/fam/jm" target="_blank">解密</a>
+<a href="/fam/js" target="_blank">旧事</a><a href="/fam/sclh" target="_blank">沙场</a>
+<a href="/video" target="_blank">视频</a></p></li></ul><br class="clear"></div>
+<div class="a980">
+<script src="/plus/ad_js.php?aid=3" language="javascript"></script><a href="http://www.csunews.com/zhuanti/zhenggao"><img src="http://www.csunews.com/uploads/allimg/130321/13_1327032861.jpg" width="980" height="96" border="0"></a>
+
+</div>
+<div id="secmenu"><span>贵州省</span>
+ <em><a href="/guizhousheng/gy">贵阳</a></em>
+<em><a href="/guizhousheng/zy">遵义</a></em>
+<em><a href="/guizhousheng/lps">六盘水</a></em>
+<em><a href="/guizhousheng/as">安顺</a></em>
+<em><a href="/guizhousheng/bj">毕节</a></em>
+<em><a href="/guizhousheng/tr">铜仁</a></em>
+<em><a href="/guizhousheng/qdn">黔东南</a></em>
+<em><a href="/guizhousheng/qn">黔南</a></em>
+<em><a href="/guizhousheng/qxn">黔西南</a></em>
+ </div>
+<div id="secmenu"><span>云南省</span>
+ <em><a href="/yunnan/km">昆明</a></em>
+<em><a href="/yunnan/zt">昭通</a></em>
+<em><a href="/yunnan/qj">曲靖</a></em>
+<em><a href="/yunnan/yx">玉溪</a></em>
+<em><a href="/yunnan/bs">保山</a></em>
+<em><a href="/yunnan/cx/">楚雄</a></em>
+<em><a href="/yunnan/hh">红河</a></em>
+<em><a href="/yunnan/ws/">文山</a></em>
+<em><a href="/yunnan/puer">普洱</a></em>
+<em><a href="/yunnan/xsbn">西双版纳</a></em>
+<em><a href="/yunnan/dali">大理</a></em>
+<em><a href="/yunnan/dh">德宏</a></em>
+<em><a href="/yunnan/lijinag/">丽江</a></em>
+<em><a href="/yunnan/nj">怒江</a></em>
+<em><a href="/yunnan/dq">迪庆</a></em>
+<em><a href="/yunnan/lc">临沧</a></em> </div>
+
+<div class="a980">
+<script src="/plus/ad_js.php?aid=11" language="javascript"></script>
+</div>
+<div id="zdlist"><!--列表页左边 开始 -->
+<div id="zdlistbig">
+<div class="topad">
+<script language="javascript" src="/templets/default/js/q.js"></script>
+</div>
+<div class="zdlist">
+<h4><a href="http://www.csunews.com/">云贵旅游地理网</a> &gt; <a href="/news/">新闻</a> &gt; <a href="/news/dt/">动态</a> &gt; </h4></div>
+<div class="arctitle">
+<h1>千人采茶 齐游名山万亩生态茶园</h1></div>
+<div class="arcinfo"><span>时间:2016-04-03 15:41:36 | 来源:网络整理 |
+编辑: | 作者:云贵旅游地理据网络整理 | </span> </div>
+
+<div class="arccontent">
+<p>
+</p><table style="border-right: #cccccc 1px dotted; table-layout: fixed; border-top: #cccccc 1px dotted; border-left: #cccccc 1px dotted; border-bottom: #cccccc 1px dotted" cellspacing="0" cellpadding="6" width="95%" align="center" border="0">
+    <tbody>
+        <tr>
+              <td style="WORD-WRAP: break-word" bgcolor="#fdfddf">[导读]：春意盎然，仙茶飘香，4月2日清明小长假第一天，第十二届蒙顶山茶文化旅游节系列活动之一的蒙茶仙子春采茶活动在名山区中峰乡牛碾坪万亩生态观光茶园隆重举行， 1000余人参与了体验活动。 本次活动由雅安市委农工委、雅安市名山区人民政府主办，四川蒙顶山茶业有限公司、四川省贸易学校协办。 踏春摄影 寻醉美茶仙子 清晨，牛碾坪万亩生态观光茶园笼罩在氤氲雾气中，满眼的油绿，被春雨滋润后的春茶，萌发出嫩绿的茶芽，散发出淡
+</td>
+        </tr>
+    </tbody>
+</table>
+<p></p>
+<p>　　</p><img alt="千人采茶 齐游名山万亩生态茶园" border="0" width="600" src="/uploads/allimg/c160403/1459B929B020-12246.jpg"><p></p><p>　　春意盎然，仙茶飘香，4月2日清明小长假第一天，第十二届蒙顶山茶文化<a href="http://www.cntgol.com">旅游</a>节系列活动之一的蒙茶仙子“春·<a href="/news/jiaodian/26001.html">采茶</a>”活动在<a href="/news/yc/3030.html">名山</a>区中峰乡牛碾坪万亩<a href="/news/dt/22718.html">生态</a>观光茶园隆重举行， 1000余人参与了体验活动。</p>
+
+<p>　　本次活动由雅安市委农工委、雅安市名山区人民政府主办，四川蒙顶山茶业有限公司、四川省贸易学校协办。</p>
+
+<p>　　踏春摄影　寻“醉美”茶仙子</p>
+
+<p>　　清晨，牛碾坪万亩生态观光茶园笼罩在氤氲雾气中，满眼的油绿，被春雨滋润后的春茶，萌发出嫩绿的茶芽，散发出淡淡的茶香，置身其中，让人不禁沉醉。</p>
+
+<p>　　微凉的天气却挡不住人们的热情。一辆辆自驾游旅行车行驶到牛碾坪的水泥路上，受邀的嘉宾和周边的游客早早地来到牛碾坪万亩生态观光茶园。</p>
+
+<p>　　上午10时左右，记者在牛碾坪万亩观光茶园内起伏的茶垅间看到，最引人注目的来自四川省贸易学校蒙茶仙子们，她们一个个身着红色、蓝色或是白色碎花衣，头戴碎花巾，腰挎茶篼，挥动着灵巧的双手，在茶树上不停地上下翻飞采摘嫩芽，美丽的蒙茶仙子在如诗如画的茶山中人、茶、山三者合一，绘出一幅美丽画卷……</p>
+
+<p>　　“雅雨飘飘蒙顶山，蒙顶山茶发新芽……”同一时间，在四周的茶山坡上，由四川贸易学校学生组成的蒙茶仙子们，唱起了悦耳动听的蒙顶山茶歌。云雾缭绕的茶山、漂亮的蒙茶仙子、动听的茶歌，让人心驰神往。</p>
+
+<p>　　顿时，牛碾坪万亩生态观光茶园沸腾了，这里成了摄影爱好者的摄影天堂。各路媒体记者、摄影师，不停地按动相机快门，，留下蒙茶仙子们采茶的靓影。</p>
+
+<p>　　“蒙茶仙子春·采茶活动美女云集，纤纤妙手蜻蜓点水般在茶树嫩叶上采摘。”来自成都的一位摄影爱好者王先生走进茶园内，不停用手机拍照，将蒙茶仙子们的靓照发到微信圈上，引来众多朋友点赞。</p>
+
+<p>　　前来茶园游玩的游客们，也一个个按捺不住，开始在茶园里一试身手。</p>
+
+<p>　　徜徉于茶乡，其实最惬意的方式当属骑自行车游茶道。还有部分游客骑着自行车，慢行在牛碾坪的骑游道上，视线所及都是似碧绿锦带般的垄垄茶林，微湿的空气中飘来淡淡的茶香，格外舒适、心旷神怡。</p>
+
+<p>　　据介绍，今年，雅安市名山区将围绕“春·采茶”、“ 夏·纳凉”、“ 秋·骑游”、“ 冬·喝汤”，大力开展“生态名山，精彩四季”系列<a href="http://www.csunews.com" target="_blank"><u>旅游</u></a>宣传促销活动，进一步促进名山生态和文化资源转化为旅游产业发展优势。</p>
+
+<p>　　游园品茗　赏“醉美”茶技艺</p>
+
+<p>　　当天，蒙茶仙子“春·采茶”活动现场还设置了现场炒制茶叶展示，同时还举行了茶艺、茶技等的相关表演。</p>
+
+<p>　　精湛的蒙顶山茶技——龙行十八式，也在音乐中，吸引了人们的眼神。</p>
+
+<p>　　在茶艺表演场地，茶艺师们轻灵飘逸的一招一式，将中式、藏式、韩式不同的茶艺韵味展示的淋漓尽致，观众们看得也是如醉如痴。</p>
+
+<p>　　真可谓是，美人，美景，茶艺，茶技，美不胜收。</p>
+
+<p>　　素有“天然氧吧”美誉的牛碾坪，空气清新的茶园为成都以及周边的市民提供了踏青好去处，本届采茶节吸引了周边大批市民前往生态茶园，观美景，赏茶艺，嗅春风，品春茶，十分惬意。据悉，雅攀共建蒙顶山茶产业园—中峰乡牛碾坪是国家级茶树良种繁育场、<a href="http://www.csunews.com" target="_blank"><u>西南</u></a>最大的茶树基因库、全国农业旅游示范点，是名山灾后重建蒙顶山茶产业发展的代表和缩影，集基地、科创、生产和旅游为一体的茶叶旅游经济综合体。</p>
+
+<p>　　在灾后恢复重建中，名山区立足景区茶区一体化，启动了以中峰乡牛碾坪为核心的国家茶叶公园建设。依托中峰乡牛碾坪良好的茶产业基础和深厚的茶文化底蕴，加快推进以“茶”为核心的茶旅综合体打造，推广“茶+桂”立体种植，形成“茶中有花、梯次开放、色彩纷呈、四季辉映”的花海茶香景观;建成了茶园骑游道、游步道以及儿童游乐设施，完成了观光亭廊、超市、茶楼、茶庄等配套服务设施。</p>
+
+<p>　　通过旅游功能的完善，有效增强了牛碾坪旅游吸附能力，推动了以“茶”为核心的休闲农业与乡村旅游融合发展，实现了“茶园变公园、茶区变景区”。2015年，牛碾坪万亩观光茶园被评为“全国生态茶园示范基地”。</p>
+<p></p><p><a href="http://www.csunews.com" style="float:right;margin-right:20px;margin-bottom:20px;"><img alt="" src="http://www.csunews.com/favicon.ico" style="width: 20px; height: 20px"></a></p>
+<p></p>
+<p><!-- Baidu Button BEGIN -->
+</p><div id="bdshare" class="bdshare_t bds_tools get-codes-bdshare">
+<a class="bds_tsina" title="分享到新浪微博" href="#"></a>
+<a class="bds_tqq" title="分享到腾讯微博" href="#"></a>
+<a class="bds_t163" title="分享到网易微博" href="#"></a>
+<a class="bds_tsohu" title="分享到搜狐微博" href="#"></a>
+<a class="bds_thx" title="分享到和讯微博" href="#"></a>
+<a class="bds_tqf" title="分享到腾讯朋友" href="#"></a>
+<a class="bds_renren" title="分享到人人网" href="#"></a>
+<a class="bds_qzone" title="分享到QQ空间" href="#"></a>
+<a class="bds_hi" title="分享到百度空间" href="#"></a>
+<a class="bds_mshare" title="分享到一键分享" href="#"></a>
+<span class="bds_more">更多</span>
+</div>
+<script type="text/javascript" id="bdshare_js" data="type=tools&amp;uid=0" src="http://bdimg.share.baidu.com/static/js/bds_s_v2.js?cdnversion=405604"></script>
+
+<script type="text/javascript">
+document.getElementById("bdshell_js").src = "http://bdimg.share.baidu.com/static/js/shell_v2.js?cdnversion=" + Math.ceil(new Date()/3600000)
+</script>
+<!-- Baidu Button END --><p></p>
+<div class="pleft">
+<div class="viewbox">
+<div class="dede_pages">
+<ul class="pagelist">
+  <li></li></ul></div></div></div></div>
+<div id="likeart">
+<div class="hot mt1">
+     <dl class="tbox">
+
+           <dt><strong>相关文章</strong></dt>
+               <dd>
+                  <ul class="c1 ico2">
+                       <table width="100%" border="0" cellspacing="0" cellpadding="0">
+<tbody><tr>
+    <td width="50%">
+<li><a href="/news/dt/30737.html">第六届成都采茶节在蒲江开幕</a></li>
+    </td>
+    <td width="50%">
+<li><a href="/news/dt/30566.html">进一步提升茶产业和乡村旅游融合发展 实现农业增效农民</a></li>
+    </td>
+    </tr>
+<tr>
+    <td width="50%">
+<li><a href="/news/dt/23148.html">蜀道举办年猪节 千人共享庖汤宴</a></li>
+    </td>
+    <td width="50%">
+<li><a href="/news/dt/22955.html">黎平上演非遗“侗族大歌”赛和千人“长桌宴”，场面精彩</a></li>
+    </td>
+    </tr>
+<tr>
+    <td width="50%">
+    </td>
+    <td width="50%">
+    </td>
+    </tr>
+<tr>
+    <td width="50%">
+    </td>
+    <td width="50%">
+    </td>
+    </tr>
+<tr>
+    <td width="50%">
+    </td>
+    <td width="50%">
+    </td>
+    </tr>
+<tr>
+    <td width="50%">
+    </td>
+    <td width="50%">
+    </td>
+    </tr>
+<tr>
+    <td width="50%">
+    </td>
+    <td width="50%">
+    </td>
+    </tr>
+    </tbody></table>
+
+                  </ul>
+               </dd>
+     </dl>
+</div></div>
+
+<div id="meirong_zq_div">
+<div class="mr_newtop">
+<h3>热点关注</h3>
+<h2>
+<a href="/member/article_add.php" target="_blank">原创投稿</a> </h2></div>
+<div id="mr_cont_div">
+<div id="mr_cont_left">
+<ul>
+<li><a href="/news/dt/32290.html" target="_blank"><img height="161" alt="吴文学：把握大众旅游" src="/uploads/allimg/c160409/146014455404Q0-1M09_lit.jpg" width="132" border="0"></a><br><a href="/news/dt/32290.html" target="_blank">吴文学：把握大众旅游</a> </li>
+<li><a href="/news/shiye/32281.html" target="_blank"><img height="161" alt="第七届四川国际自驾游" src="/uploads/allimg/c160409/146013K01V510-1K52_lit.jpg" width="132" border="0"></a><br><a href="/news/shiye/32281.html" target="_blank">第七届四川国际自驾游</a> </li>
+
+</ul></div>
+<div id="mr_cont_right">
+<h3><a href="/news/yc/23333.html" target="_blank">[关注世界遗产]冬日云南哈尼梯田美如画(图)</a></h3>
+
+<ul>
+<li><a href="/news/shiye/32279.html" target="_blank"><img height="80" alt="建政务云用大数据" 提="" src="/uploads/allimg/c160409/146013I533L20-13Q8_lit.jpg" width="100" border="0"></a><br><a href="/news/shiye/32279.html" target="_blank">建政务云用大数据 提</a> </li>
+<li><a href="/news/jiaodian/32278.html" target="_blank"><img height="80" alt="冈仁波齐" |="" 一座藏地="" src="/uploads/allimg/c160409/1460135191L050-11431_lit.jpg" width="100" border="0"></a><br><a href="/news/jiaodian/32278.html" target="_blank">冈仁波齐 | 一座藏地</a> </li>
+<li><a href="/news/jiaodian/32277.html" target="_blank"><img height="80" alt="【童言无忌走湘西】雪" src="/uploads/allimg/c160409/1460135161G3Z-195M_lit.jpg" width="100" border="0"></a><br><a href="/news/jiaodian/32277.html" target="_blank">【童言无忌走湘西】雪</a> </li>
+<li><a href="/news/jiaodian/32276.html" target="_blank"><img height="80" alt="清明时节，当麓湖美成" src="/uploads/allimg/c160409/14601351033K60-12G2_lit.jpg" width="100" border="0"></a><br><a href="/news/jiaodian/32276.html" target="_blank">清明时节，当麓湖美成</a> </li>
+<li><a href="/news/jiaodian/32275.html" target="_blank"><img height="80" alt="【意大利】" 从垂死之="" src="/uploads/allimg/c160409/14601350125bZ-1K05_lit.jpg" width="100" border="0"></a><br><a href="/news/jiaodian/32275.html" target="_blank">【意大利】 从垂死之</a> </li>
+<li><a href="/news/jiaodian/32274.html" target="_blank"><img height="80" alt="岩溶之国" 探秘中国的="" src="/uploads/allimg/c160409/1460134953Q450-11295_lit.jpg" width="100" border="0"></a><br><a href="/news/jiaodian/32274.html" target="_blank">岩溶之国 探秘中国的</a> </li>
+
+</ul>
+<div id="mr_list_waik">
+<dl>
+<dd>·<a href="/news/dt/32290.html" target="_blank">吴文学：把握大众旅游时代特征 全力发展新</a> </dd>
+<dd>·<a href="/news/shiye/32281.html" target="_blank">第七届四川国际自驾游交易博览会十月相约巴</a> </dd>
+<dd>·<a href="/news/shiye/32280.html" target="_blank">王宁常务副省长在印度推介四川旅游</a> </dd>
+<dd>·<a href="/news/shiye/32279.html" target="_blank">建政务云用大数据 提升现代社会治理能力</a> </dd>
+
+</dl>
+<dl>
+<dd>·<a href="/fam/kg/30002.html" target="_blank">全国文物修复人员仅400人左右</a> </dd>
+<dd>·<a href="/fam/kg/29772.html" target="_blank">古西域女子爱红妆 首饰妆品很时髦</a> </dd>
+<dd>·<a href="/fam/kg/29614.html" target="_blank">海昏侯墓出土金器纯度达99% 金饼金板属于酎</a> </dd>
+<dd>·<a href="/fam/kg/29407.html" target="_blank">海昏侯墓考古记：站在最前沿 汉代火锅出炉</a> </dd>
+
+</dl>
+<dl>
+<dd>·<a href="/faxian/sw/31435.html" target="_blank">相机拍摄贵州从江加勉乡雨后春笋采挖成美食</a> </dd>
+<dd>·<a href="/faxian/xs/31432.html" target="_blank">贵州雷山苗族举办千人“讨花带”公开求爱活</a> </dd>
+<dd>·<a href="/faxian/yiji/31431.html" target="_blank">贵州黎平革命教育基地已接待游客600万人次</a> </dd>
+<dd>·<a href="/faxian/wh/31402.html" target="_blank">[地理风物][黔东南]新寨：藤条做的“寨门”</a> </dd>
+
+</dl>
+<dl>
+<dd>·<a href="/xing/lushu/20101119/1827.html" target="_blank">教你如何打造家居客厅好风水</a> </dd>
+<dd>·<a href="/xing/lushu/20101119/1828.html" target="_blank">客厅布局 家居风水第一步</a> </dd>
+<dd>·<a href="/xing/lushu/20101119/1829.html" target="_blank">教您巧妙布置甜美爱情风水</a> </dd>
+<dd>·<a href="/xing/lushu/20101119/1830.html" target="_blank">高考家居风水解密 文昌加贵的家居布置</a> </dd>
+
+</dl>
+</div></div></div></div>
+<div id="Show_bottom">
+<ol>
+  <li>
+  <div class="Show_b_list">
+  <h2><a href="/news/yc/" target="_blank">原创</a><span></span></h2>
+<p><a href="/news/yc/23333.html" target="_blank"><img height="79" alt="[关注世界遗产]冬日云南哈尼梯田美如画(图)" src="/uploads/allimg/160113/2245215331-0-lp.jpg" width="173" border="0"></a></p>
+
+  <ul>
+<li>· <a href="/news/yc/31881.html" target="_blank">重庆巫山牡丹花清明节盛放引游客</a> </li>
+<li>· <a href="/news/yc/31658.html" target="_blank">安利钙镁片的作用与功能：辅以维</a> </li>
+<li>· <a href="/news/yc/31416.html" target="_blank">湖北楚罐楚蒸餐饮店长培训内容简</a> </li>
+</ul><br clear="all"></div></li>
+  <li>
+  <div class="Show_b_list">
+  <h2><a href="/pic" target="_blank">图片</a><span></span></h2>
+<p><a href="/pic/jishi/30548.html" target="_blank"><img height="79" alt="贵州雷山：苗族同胞迎来13年一次“招龙节”（图）" src="/uploads/160319/13-160319145A95P.jpg" width="173" border="0"></a></p>
+
+  <ul>
+<li>· <a href="/pic/dili/31605.html" target="_blank">走近春日黔东南从江侗族古寨增冲</a> </li>
+<li>· <a href="/pic/lvyou/30687.html" target="_blank">贵州岑巩桃花节，上万名游客赏花</a> </li>
+<li>· <a href="/pic/jishi/30548.html" target="_blank">贵州雷山：苗族同胞迎来13年一次</a> </li>
+
+</ul><br clear="all"></div></li>
+  <li class="clear_R">
+  <div class="Show_b_list">
+  <h2><a href="/video" target="_blank">视频</a><span></span></h2>
+<p><a href="/video/faxian/2304.html" target="_blank"><img height="79" alt="韩国超性感美女歌手Ora新单-Naughty" face="" src="/uploads/allimg/100618/1-10061Q525030-L.jpg" width="173" border="0"></a></p>
+
+  <ul>
+<li>· <a href="/video/faxian/2308.html" target="_blank">张靓颖ft张学友ft K'naan-MV(MTV</a> </li>
+<li>· <a href="/video/faxian/2309.html" target="_blank">土耳其性感美媚歌手Sila 新单曲-</a> </li>
+<li>· <a href="/video/faxian/2310.html" target="_blank">漂亮美媚抽疯的甩葱歌</a> </li>
+
+</ul><br clear="all"></div></li></ol></div>
+
+
+
+</div><!--列表页右边 开始 -->
+<div id="zdlist_R">
+<div class="zd_top">
+<div class="zd_top_title">
+<ul>
+<a href="/fam/qy/22134.html" target="_blank">省假日办检查云南国庆节前旅游筹备工作</a>
+</ul></div>
+<div class="zd_top_L">
+<ul>
+<li><a href="/fam/kg/23816.html" target="_blank"><img height="88" alt="新疆沙湾县第一次" src="/uploads/allimg/c160114/1452K1120bI0-14428_lit.jpg" width="113" border="0"></a><br><a href="/fam/kg/23816.html" target="_blank"><font color="#ff0000">新疆沙湾县第一次</font></a> </li>
+</ul></div>
+<div class="zd_top_R">
+<ul>
+<li><a href="/fam/kg/30002.html" target="_blank">全国文物修复人员仅400人左右</a> </li>
+<li><a href="/fam/kg/29772.html" target="_blank">古西域女子爱红妆 首饰妆品很时髦</a> </li>
+<li><a href="/fam/kg/29614.html" target="_blank">海昏侯墓出土金器纯度达99% 金饼金板属于酎</a> </li>
+<li><a href="/fam/kg/29407.html" target="_blank">海昏侯墓考古记：站在最前沿 汉代火锅出炉</a> </li>
+<li><a href="/fam/kg/29406.html" target="_blank">故宫文物修复师：工作时聊个天都不行</a> </li>
+
+</ul></div></div>
+<div class="zd_R">
+<div class="small_listt">
+<h4>热门文章HOT</h4></div>
+<ul>
+<li><span>热</span><a href="/news/dt/880.html" target="_blank">15岁女孩因被班主任劝退反省 自家窗前留遗</a> </li>
+<li><span>热</span><a href="/news/dt/882.html" target="_blank">城管也有情：夫妻卖油条14年连供3个大学生 </a> </li>
+<li><span>热</span><a href="/news/dt/879.html" target="_blank">农民工自制土炮轰退强制拆迁队 声称自己并</a> </li>
+<li><span>热</span><a href="/news/dt/881.html" target="_blank">4000平米村委会办公楼 只有10人孤零零办公</a> </li>
+<li><span>热</span><a href="/news/dt/884.html" target="_blank">菲律宾应试现新种巨型蜥 长达2米体重十公斤</a> </li>
+<li><span>热</span><a href="/news/hw/701.html" target="_blank">首都军区工兵团救出32岁藏族女青年</a> </li>
+
+</ul></div>
+<div class="zd_tuijian">
+<div class="zd_tuijian_title">
+<ul>
+<a href="/news/dt/20996.html" target="_blank">河南安阳大学生暑期到广西融水苗乡支教（图</a>
+</ul></div>
+<div class="zd_tuijian_L">
+<ul>
+<li><a href="/faxian/sw/19145.html" target="_blank"><img height="80" alt="肯尼亚桑布鲁国" src="/uploads/allimg/130504/13-1305041302580-L.jpg" width="100" border="0"></a><br><a href="/faxian/sw/19145.html" target="_blank"><font color="#ff0000">肯尼亚桑布鲁国</font></a> </li>
+<li><a href="/faxian/hl/7659.html" target="_blank"><img height="80" alt="西藏2处风景区" src="/uploads/allimg/130129/0023513J5_lit.jpg" width="100" border="0"></a><br><a href="/faxian/hl/7659.html" target="_blank"><font color="#ff0000">西藏2处风景区</font></a> </li>
+
+</ul></div>
+<div class="zd_tuijian_R">
+<ul>
+<li><a href="/faxian/sw/31435.html" target="_blank">相机拍摄贵州从江加勉乡雨后春</a> </li>
+<li><a href="/faxian/xs/31432.html" target="_blank">贵州雷山苗族举办千人“讨花带</a> </li>
+<li><a href="/faxian/yiji/31431.html" target="_blank">贵州黎平革命教育基地已接待游</a> </li>
+<li><a href="/faxian/wh/31402.html" target="_blank">[地理风物][黔东南]新寨：藤条</a> </li>
+<li><a href="/faxian/wh/31403.html" target="_blank">[地理风物][黔东南]贵州施秉:</a> </li>
+<li><a href="/faxian/juzhu/27689.html" target="_blank">杨丽萍大理豪宅曝光依山傍水 </a> </li>
+<li><a href="/faxian/qx/22129.html" target="_blank">端午旅游人气排行榜 日本超韩</a> </li>
+<li><a href="/faxian/qx/22114.html" target="_blank">第十五届中缅胞波狂欢节将于10</a> </li>
+<li><a href="/faxian/qx/22113.html" target="_blank">泰领馆：落地签需提供往返机票</a> </li>
+
+</ul></div></div>
+<div class="zd_R">
+<div class="small_listt">
+<h4>最新文章NEW</h4></div>
+<ul>
+<li><span>新</span><a href="/news/dt/32290.html" target="_blank">吴文学：把握大众旅游时代特征 全力发</a> </li>
+<li><span>新</span><a href="/news/shiye/32281.html" target="_blank">第七届四川国际自驾游交易博览会十月相</a> </li>
+<li><span>新</span><a href="/news/shiye/32280.html" target="_blank">王宁常务副省长在印度推介四川旅游</a> </li>
+<li><span>新</span><a href="/news/shiye/32279.html" target="_blank">建政务云用大数据 提升现代社会治理能</a> </li>
+<li><span>新</span><a href="/news/jiaodian/32278.html" target="_blank">冈仁波齐 | 一座藏地神山</a> </li>
+<li><span>新</span><a href="/news/jiaodian/32277.html" target="_blank">【童言无忌走湘西】雪花曼舞凤凰城</a> </li>
+
+</ul></div>
+<div class="zd_R">
+<div class="small_listt">
+<h4>最新评论</h4></div>
+<ul>
+<li><span>评</span><a href="/news/dt/32290.html" target="_blank">吴文学：把握大众旅游时代特征 全力发</a> </li>
+<li><span>评</span><a href="/news/shiye/32281.html" target="_blank">第七届四川国际自驾游交易博览会十月相</a> </li>
+<li><span>评</span><a href="/news/shiye/32280.html" target="_blank">王宁常务副省长在印度推介四川旅游</a> </li>
+<li><span>评</span><a href="/news/shiye/32279.html" target="_blank">建政务云用大数据 提升现代社会治理能</a> </li>
+<li><span>评</span><a href="/news/jiaodian/32278.html" target="_blank">冈仁波齐 | 一座藏地神山</a> </li>
+<li><span>评</span><a href="/news/jiaodian/32277.html" target="_blank">【童言无忌走湘西】雪花曼舞凤凰城</a> </li>
+
+</ul></div>
+<div class="zd_tuijian">
+<div class="zd_tuijian_title">
+<ul>
+<a href="/xing/gonglue/20130106/3096.html" target="_blank">北京驴友遇难震动无锡驴友圈 读攻略玩户外</a>
+</ul></div>
+<div class="zd_tuijian_L">
+<ul>
+<li><a href="/xing/gonglue/20160407/32135.html" target="_blank"><img height="80" alt="漫步勐腊热带雨" src="/uploads/allimg/c160407/146000aH64T0-41T1.jpg" width="100" border="0"></a><br><a href="/xing/gonglue/20160407/32135.html" target="_blank"><font color="#ff0000">漫步勐腊热带雨</font></a> </li>
+<li><a href="/xing/gonglue/20160402/31752.html" target="_blank"><img height="80" alt="怒江雾里村 中" src="/uploads/allimg/c160402/14595W2522P30-434I.jpg" width="100" border="0"></a><br><a href="/xing/gonglue/20160402/31752.html" target="_blank"><font color="#ff0000">怒江雾里村 中</font></a> </li>
+
+</ul></div>
+<div class="zd_tuijian_R">
+<ul>
+<li><a href="/xing/renwu/20160408/32222.html" target="_blank">尚启元:《跟着电影去旅行》系</a> </li>
+<li><a href="/xing/renwu/20160407/32206.html" target="_blank">唱响苗侗大地 记乐为宣传美丽</a> </li>
+<li><a href="/xing/gonglue/20160407/32136.html" target="_blank">西双版纳曼掌村 传统文化演绎</a> </li>
+<li><a href="/xing/gonglue/20160407/32135.html" target="_blank">漫步勐腊热带雨林 在童话世界</a> </li>
+<li><a href="/xing/gonglue/20160407/32134.html" target="_blank">西双版纳告庄旅游攻略</a> </li>
+<li><a href="/xing/gonglue/20160407/32133.html" target="_blank">大理春季旅游线路推荐 像梦一</a> </li>
+<li><a href="/xing/gonglue/20160407/32132.html" target="_blank">云南德宏泼水节攻略 盘点瑞丽</a> </li>
+<li><a href="/xing/tuijian/20160406/32002.html" target="_blank">亚美尼亚：神话与奇迹的国家</a> </li>
+<li><a href="/xing/tuijian/20160406/32001.html" target="_blank">那仰望的人 化身为夜空中最亮</a> </li>
+
+</ul></div></div>
+<div class="zd_R">
+<div class="small_listt">
+<h4>新闻排行</h4></div>
+<ul>
+<li><span>热</span><a href="/news/dt/880.html" target="_blank">15岁女孩因被班主任劝退反省 自家窗前</a> </li>
+<li><span>热</span><a href="/news/dt/882.html" target="_blank">城管也有情：夫妻卖油条14年连供3个大</a> </li>
+<li><span>热</span><a href="/news/dt/879.html" target="_blank">农民工自制土炮轰退强制拆迁队 声称自</a> </li>
+<li><span>热</span><a href="/news/dt/881.html" target="_blank">4000平米村委会办公楼 只有10人孤零零</a> </li>
+<li><span>热</span><a href="/news/dt/884.html" target="_blank">菲律宾应试现新种巨型蜥 长达2米体重十</a> </li>
+<li><span>热</span><a href="/news/hw/701.html" target="_blank">首都军区工兵团救出32岁藏族女青年</a> </li>
+
+</ul></div>
+<div class="zd_R">
+<div class="small_listt">
+<h4>图片排行</h4></div>
+<ul>
+<li><span>热</span><a href="/pic/jishi/19712.html" target="_blank">贵州松桃:实拍三阳佳肴“神仙豆腐”制</a> </li>
+<li><span>热</span><a href="/pic/jishi/1971.html" target="_blank">抓拍大牌明星们＂掉链子＂出糗时的瞬间</a> </li>
+<li><span>热</span><a href="/pic/jishi/10954.html" target="_blank">云南德宏：古老神秘的德昂族婚俗[高清]</a> </li>
+<li><span>热</span><a href="/pic/jishi/9532.html" target="_blank">巴布新几内亚土著部落仍然保持树叶遮体</a> </li>
+<li><span>热</span><a href="/pic/ys/9850.html" target="_blank"><font color="#330099">高清图集：第56届世界新闻摄影比赛（荷</font></a> </li>
+<li><span>热</span><a href="/pic/jishi/18804.html" target="_blank">云南玉溪一周视觉回眸（4月15日—4月19</a> </li>
+
+</ul></div>
+<div class="zd_R">
+<div class="small_listt">
+<h4>视频排行</h4></div>
+<ul>
+<li><span>热</span><a href="/video/xing/2193.html" target="_blank">世界杯今日之最：巴西技高一筹 朝鲜意</a> </li>
+<li><span>热</span><a href="/video/faxian/2310.html" target="_blank">漂亮美媚抽疯的甩葱歌</a> </li>
+<li><span>热</span><a href="/video/xing/2440.html" target="_blank">世界杯回顾： 丹麦2:1喀麦隆全场回顾</a> </li>
+<li><span>热</span><a href="/video/xing/2441.html" target="_blank">世界杯视频：澳大利亚1:1险平加纳 科威</a> </li>
+<li><span>热</span><a href="/video/xing/2442.html" target="_blank">法国队球员阿内尔卡辱骂多梅内克被法国</a> </li>
+<li><span>热</span><a href="/video/xing/2443.html" target="_blank">闪电罗梅达尔世界杯里超越猎豹 全场赛</a> </li>
+
+</ul></div>
+</div><br clear="all"></div>
+<div id="footer">
+<h3><a href="/news/">新闻</a> | <a href="/faxing">发现</a> | <a href="/fam">秘镜</a> | <a href="/pic">图片</a> | <a href="http://www.cntgol.com/bbs">论坛</a> | <a href="http://www.cntgol.com/home">家园</a> | <a href="/plus/flink_add.php">申请链接</a>
+| <a href="http://www.csunews.com/member/article_add.php">在线投稿</a></h3>
+  云贵旅游地理网-中南偏西 精彩云贵版权所有 网站内容来源为原创以及互联网 转载请声明出处
+<br>
+如果发现本站触犯了您的版权和利益，请联系邮�䣺csunews@163.com(投稿)，我们将在三个工作日内作删除等处理．
+  <br>
+  Copyright @2008-2013  Corporation, All Rights Reserved 浙ICP备13001813-3  <script type="text/javascript">
+var _bdhmProtocol = (("https:" == document.location.protocol) ? " https://" : " http://");
+document.write(unescape("%3Cscript src='" + _bdhmProtocol + "hm.baidu.com/h.js%3F8588335ff630561d73199fb4cc386ea5' type='text/javascript'%3E%3C/script%3E"));
+</script><script src=" http://hm.baidu.com/h.js?8588335ff630561d73199fb4cc386ea5" type="text/javascript"></script><a href="http://tongji.baidu.com/hm-web/welcome/ico?s=8588335ff630561d73199fb4cc386ea5" target="_blank"><img border="0" src="http://eiv.baidu.com/hmt/icon/21.gif" width="20" height="20"></a>
+
+</div>
+
+
+<audio controls="controls" style="display: none;"></audio></body></html>'''
+
+
+def getHtml5():
+    return '''<html><head><script type="text/javascript" async="" src="https://d31qbv1cthcecs.cloudfront.net/atrk.js"></script><script async="" src="//www.google-analytics.com/analytics.js"></script><script type="text/javascript" charset="utf-8" src="http://assets.changyan.sohu.com/upload/changyan.js?conf=prod_97075b09bc8da2c6efe5649a72a8c43f&amp;appid=cyr45LmB4"></script>  <script type="text/javascript" async="" src="http://motions.gmw.cn/show/19695837"></script><script id="allmobilize" charset="utf-8" src="http://a.yunshipei.com/220ab67da786fc1e7db0820652045017/allmobilize.min.js"></script><style type="text/css"></style><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="alternate" media="handheld" href="#">
+
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<meta name="keywords" content="候鸟">
+<meta name="description" content="　　眼下，我国北方地区天气回暖，又进入到候鸟迁徙的季节，在年复一年的南来北往中，它们既要承受来自自然界的生存考验，又要面临人类活动带来的侵扰——湿地退化，人鸟争粮，以观赏之名的打搅，甚至是无情捕杀…… <BR>　　野生鸟类尤其是候鸟对栖息环境质量的要求极高，因此成为国际公认的最能直观反映地区生态文明发展程度的标志。为了给候鸟营造一个安全的栖息环境，最大限度地排除人类活动的干扰，各地采取了很多强有力的保护措施。">
+<meta name="filetype" content="0">
+<meta name="publishedtype" content="1">
+<meta name="pagetype" content="1">
+<meta name="webterren_speical" content="gmrbanalytics">
+<meta name="catalogs" content="4108">
+<meta name="contentid" content="19695837">
+<meta name="publishdate" content="2016-04-14">
+<meta name="author" content="徐皓">
+<title>生态补偿探索候鸟保护新机制 让候鸟平安返乡(1)_光明日报
+_光明网</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" type="text/css" href="http://img.gmw.cn/css/content_global.css">
+<link rel="stylesheet" type="text/css" href="http://img.gmw.cn/css/public_gmw.css">
+<script src="http://static.bshare.cn/b/components/bsStatic.js?v=20160206" type="text/javascript" charset="utf-8"></script><style></style><script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/r.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.sohu.com/upload/version-v3.js?14622636646190.2929450429120251"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.sohu.com/debug/cookie?callback=changyan86114571"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/v3/v20160429150/src/adapter.min.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.sohu.com/api/2/config/get/cyr45LmB4?callback=changyan303197533"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/v3/v20160429150/src/start.min.js"></script><style type="text/css">#SOHUCS{clear:both}#SOHUCS #SOHU_MAIN *{box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box}#SOHUCS,#SOHUCS #SOHU_MAIN{margin:0;margin-left:auto;margin-right:auto;padding:0;border:0;font-weight:400;text-align:left;width:100%;height:auto;overflow:visible;font-size:12px;color:#333;background-color:transparent;line-height:1}#SOHUCS #SOHU_MAIN a,#SOHUCS #SOHU_MAIN abbr,#SOHUCS #SOHU_MAIN acronym,#SOHUCS #SOHU_MAIN address,#SOHUCS #SOHU_MAIN applet,#SOHUCS #SOHU_MAIN article,#SOHUCS #SOHU_MAIN aside,#SOHUCS #SOHU_MAIN audio,#SOHUCS #SOHU_MAIN b,#SOHUCS #SOHU_MAIN big,#SOHUCS #SOHU_MAIN blockquote,#SOHUCS #SOHU_MAIN canvas,#SOHUCS #SOHU_MAIN caption,#SOHUCS #SOHU_MAIN center,#SOHUCS #SOHU_MAIN cite,#SOHUCS #SOHU_MAIN code,#SOHUCS #SOHU_MAIN dd,#SOHUCS #SOHU_MAIN del,#SOHUCS #SOHU_MAIN details,#SOHUCS #SOHU_MAIN dfn,#SOHUCS #SOHU_MAIN dialog,#SOHUCS #SOHU_MAIN div,#SOHUCS #SOHU_MAIN dl,#SOHUCS #SOHU_MAIN dt,#SOHUCS #SOHU_MAIN em,#SOHUCS #SOHU_MAIN embed,#SOHUCS #SOHU_MAIN fieldset,#SOHUCS #SOHU_MAIN figcaption,#SOHUCS #SOHU_MAIN figure,#SOHUCS #SOHU_MAIN font,#SOHUCS #SOHU_MAIN footer,#SOHUCS #SOHU_MAIN form,#SOHUCS #SOHU_MAIN h1,#SOHUCS #SOHU_MAIN h2,#SOHUCS #SOHU_MAIN h3,#SOHUCS #SOHU_MAIN h4,#SOHUCS #SOHU_MAIN h5,#SOHUCS #SOHU_MAIN h6,#SOHUCS #SOHU_MAIN header,#SOHUCS #SOHU_MAIN hgroup,#SOHUCS #SOHU_MAIN hr,#SOHUCS #SOHU_MAIN i,#SOHUCS #SOHU_MAIN iframe,#SOHUCS #SOHU_MAIN img,#SOHUCS #SOHU_MAIN ins,#SOHUCS #SOHU_MAIN kbd,#SOHUCS #SOHU_MAIN label,#SOHUCS #SOHU_MAIN legend,#SOHUCS #SOHU_MAIN li,#SOHUCS #SOHU_MAIN mark,#SOHUCS #SOHU_MAIN menu,#SOHUCS #SOHU_MAIN meter,#SOHUCS #SOHU_MAIN nav,#SOHUCS #SOHU_MAIN object,#SOHUCS #SOHU_MAIN ol,#SOHUCS #SOHU_MAIN output,#SOHUCS #SOHU_MAIN p,#SOHUCS #SOHU_MAIN pre,#SOHUCS #SOHU_MAIN progress,#SOHUCS #SOHU_MAIN q,#SOHUCS #SOHU_MAIN rp,#SOHUCS #SOHU_MAIN rt,#SOHUCS #SOHU_MAIN ruby,#SOHUCS #SOHU_MAIN s,#SOHUCS #SOHU_MAIN samp,#SOHUCS #SOHU_MAIN section,#SOHUCS #SOHU_MAIN small,#SOHUCS #SOHU_MAIN span,#SOHUCS #SOHU_MAIN strike,#SOHUCS #SOHU_MAIN strong,#SOHUCS #SOHU_MAIN sub,#SOHUCS #SOHU_MAIN summary,#SOHUCS #SOHU_MAIN sup,#SOHUCS #SOHU_MAIN table,#SOHUCS #SOHU_MAIN tbody,#SOHUCS #SOHU_MAIN td,#SOHUCS #SOHU_MAIN tfoot,#SOHUCS #SOHU_MAIN th,#SOHUCS #SOHU_MAIN thead,#SOHUCS #SOHU_MAIN time,#SOHUCS #SOHU_MAIN tr,#SOHUCS #SOHU_MAIN tt,#SOHUCS #SOHU_MAIN u,#SOHUCS #SOHU_MAIN ul,#SOHUCS #SOHU_MAIN var,#SOHUCS #SOHU_MAIN video,#SOHUCS #SOHU_MAIN xmp{border:0;margin:0;padding:0;font-size:100%;text-align:left;vertical-align:baseline;background-image:none;background-position:0 0;width:auto;float:none;overflow:visible;text-indent:0}#SOHUCS #SOHU_MAIN article,#SOHUCS #SOHU_MAIN aside,#SOHUCS #SOHU_MAIN details,#SOHUCS #SOHU_MAIN figcaption,#SOHUCS #SOHU_MAIN figure,#SOHUCS #SOHU_MAIN footer,#SOHUCS #SOHU_MAIN header,#SOHUCS #SOHU_MAIN hgroup,#SOHUCS #SOHU_MAIN menu,#SOHUCS #SOHU_MAIN nav,#SOHUCS #SOHU_MAIN section{display:block}#SOHUCS #SOHU_MAIN b,#SOHUCS #SOHU_MAIN h1,#SOHUCS #SOHU_MAIN h2,#SOHUCS #SOHU_MAIN h3,#SOHUCS #SOHU_MAIN h4,#SOHUCS #SOHU_MAIN h5,#SOHUCS #SOHU_MAIN h6,#SOHUCS #SOHU_MAIN strong{font-weight:400}#SOHUCS #SOHU_MAIN img{color:transparent;font-size:0;vertical-align:middle;-ms-interpolation-mode:bicubic}#SOHUCS #SOHU_MAIN li,#SOHUCS #SOHU_MAIN ol,#SOHUCS #SOHU_MAIN ul{list-style:none}#SOHUCS #SOHU_MAIN li{display:list-item}#SOHUCS #SOHU_MAIN table{border-collapse:collapse;border-spacing:0}#SOHUCS #SOHU_MAIN caption,#SOHUCS #SOHU_MAIN td,#SOHUCS #SOHU_MAIN th{font-weight:400;vertical-align:top;text-align:left}#SOHUCS #SOHU_MAIN q{quotes:none}#SOHUCS #SOHU_MAIN q:after,#SOHUCS #SOHU_MAIN q:before{content:'';content:none}#SOHUCS #SOHU_MAIN small,#SOHUCS #SOHU_MAIN sub,#SOHUCS #SOHU_MAIN sup{font-size:75%}#SOHUCS #SOHU_MAIN sub,#SOHUCS #SOHU_MAIN sup{line-height:0;position:relative;vertical-align:baseline}#SOHUCS #SOHU_MAIN sub{bottom:-.25em}#SOHUCS #SOHU_MAIN sup{top:-.5em}#SOHUCS #SOHU_MAIN svg{overflow:hidden}#SOHUCS #SOHU_MAIN del,#SOHUCS #SOHU_MAIN ins,#SOHUCS #SOHU_MAIN s,#SOHUCS #SOHU_MAIN u{text-decoration:none}#SOHUCS #SOHU_MAIN p{word-wrap:break-word;break-word:break-all}#SOHUCS #SOHU_MAIN em,#SOHUCS #SOHU_MAIN i{font-style:normal}#SOHUCS #SOHU_MAIN a,#SOHUCS #SOHU_MAIN b,#SOHUCS #SOHU_MAIN em,#SOHUCS #SOHU_MAIN i,#SOHUCS #SOHU_MAIN img,#SOHUCS #SOHU_MAIN input,#SOHUCS #SOHU_MAIN label,#SOHUCS #SOHU_MAIN s,#SOHUCS #SOHU_MAIN span,#SOHUCS #SOHU_MAIN strong,#SOHUCS #SOHU_MAIN sub,#SOHUCS #SOHU_MAIN sup,#SOHUCS #SOHU_MAIN textarea,#SOHUCS #SOHU_MAIN u{display:inline}#SOHUCS #SOHU_MAIN input,#SOHUCS #SOHU_MAIN select,#SOHUCS #SOHU_MAIN select option,#SOHUCS #SOHU_MAIN textarea{margin:0;padding:0;border:0;outline:0}#SOHUCS #SOHU_MAIN a:focus,#SOHUCS #SOHU_MAIN input:focus,#SOHUCS #SOHU_MAIN textarea:focus{outline:0}#SOHUCS #SOHU_MAIN button,#SOHUCS #SOHU_MAIN input,#SOHUCS #SOHU_MAIN select,#SOHUCS #SOHU_MAIN textarea{background-attachment:scroll}#SOHUCS #SOHU_MAIN li{clear:none}#SOHUCS #SOHU_MAIN a{color:#44708e;text-decoration:none}#SOHUCS #SOHU_MAIN a:hover{color:#ee542a;text-decoration:underline}#SOHUCS #SOHU_MAIN .clear-g{zoom:1}#SOHUCS #SOHU_MAIN .clear-g:after{content:".";display:block;visibility:hidden;height:0;clear:both}#SOHUCS #SOHU_MAIN .global-clear-spacing{letter-spacing:-6px}#SOHUCS #SOHU_MAIN .global-clear-spacing *{letter-spacing:normal}</style><style type="text/css">.module-cy-user-page *{box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box}.module-cy-user-page{margin:0;margin-left:auto;margin-right:auto;padding:0;border:0;font-weight:400;text-align:left;width:100%;height:auto;overflow:visible;font-size:12px;color:#333;background-color:transparent;line-height:1}.module-cy-user-page a,.module-cy-user-page abbr,.module-cy-user-page acronym,.module-cy-user-page address,.module-cy-user-page applet,.module-cy-user-page article,.module-cy-user-page aside,.module-cy-user-page audio,.module-cy-user-page b,.module-cy-user-page big,.module-cy-user-page blockquote,.module-cy-user-page canvas,.module-cy-user-page caption,.module-cy-user-page center,.module-cy-user-page cite,.module-cy-user-page code,.module-cy-user-page dd,.module-cy-user-page del,.module-cy-user-page details,.module-cy-user-page dfn,.module-cy-user-page dialog,.module-cy-user-page div,.module-cy-user-page dl,.module-cy-user-page dt,.module-cy-user-page em,.module-cy-user-page embed,.module-cy-user-page fieldset,.module-cy-user-page figcaption,.module-cy-user-page figure,.module-cy-user-page font,.module-cy-user-page footer,.module-cy-user-page form,.module-cy-user-page h1,.module-cy-user-page h2,.module-cy-user-page h3,.module-cy-user-page h4,.module-cy-user-page h5,.module-cy-user-page h6,.module-cy-user-page header,.module-cy-user-page hgroup,.module-cy-user-page hr,.module-cy-user-page i,.module-cy-user-page iframe,.module-cy-user-page img,.module-cy-user-page ins,.module-cy-user-page kbd,.module-cy-user-page label,.module-cy-user-page legend,.module-cy-user-page li,.module-cy-user-page mark,.module-cy-user-page menu,.module-cy-user-page meter,.module-cy-user-page nav,.module-cy-user-page object,.module-cy-user-page ol,.module-cy-user-page output,.module-cy-user-page p,.module-cy-user-page pre,.module-cy-user-page progress,.module-cy-user-page q,.module-cy-user-page rp,.module-cy-user-page rt,.module-cy-user-page ruby,.module-cy-user-page s,.module-cy-user-page samp,.module-cy-user-page section,.module-cy-user-page small,.module-cy-user-page span,.module-cy-user-page strike,.module-cy-user-page strong,.module-cy-user-page sub,.module-cy-user-page summary,.module-cy-user-page sup,.module-cy-user-page table,.module-cy-user-page tbody,.module-cy-user-page td,.module-cy-user-page tfoot,.module-cy-user-page th,.module-cy-user-page thead,.module-cy-user-page time,.module-cy-user-page tr,.module-cy-user-page tt,.module-cy-user-page u,.module-cy-user-page ul,.module-cy-user-page var,.module-cy-user-page video,.module-cy-user-page xmp{border:0;margin:0;padding:0;font-size:100%;text-align:left;vertical-align:baseline;background-image:none;background-position:0 0;width:auto;float:none;overflow:visible;text-indent:0}.module-cy-user-page article,.module-cy-user-page aside,.module-cy-user-page details,.module-cy-user-page figcaption,.module-cy-user-page figure,.module-cy-user-page footer,.module-cy-user-page header,.module-cy-user-page hgroup,.module-cy-user-page menu,.module-cy-user-page nav,.module-cy-user-page section{display:block}.module-cy-user-page b,.module-cy-user-page h1,.module-cy-user-page h2,.module-cy-user-page h3,.module-cy-user-page h4,.module-cy-user-page h5,.module-cy-user-page h6,.module-cy-user-page strong{font-weight:400}.module-cy-user-page img{color:transparent;font-size:0;vertical-align:middle;-ms-interpolation-mode:bicubic}.module-cy-user-page li,.module-cy-user-page ol,.module-cy-user-page ul{list-style:none}.module-cy-user-page li{display:list-item}.module-cy-user-page table{border-collapse:collapse;border-spacing:0}.module-cy-user-page caption,.module-cy-user-page td,.module-cy-user-page th{font-weight:400;vertical-align:top;text-align:left}.module-cy-user-page q{quotes:none}.module-cy-user-page q:after,.module-cy-user-page q:before{content:'';content:none}.module-cy-user-page small,.module-cy-user-page sub,.module-cy-user-page sup{font-size:75%}.module-cy-user-page sub,.module-cy-user-page sup{line-height:0;position:relative;vertical-align:baseline}.module-cy-user-page sub{bottom:-.25em}.module-cy-user-page sup{top:-.5em}.module-cy-user-page svg{overflow:hidden}.module-cy-user-page del,.module-cy-user-page ins,.module-cy-user-page s,.module-cy-user-page u{text-decoration:none}.module-cy-user-page p{word-wrap:break-word;break-word:break-all}.module-cy-user-page em,.module-cy-user-page i{font-style:normal}.module-cy-user-page a,.module-cy-user-page b,.module-cy-user-page em,.module-cy-user-page i,.module-cy-user-page img,.module-cy-user-page input,.module-cy-user-page label,.module-cy-user-page s,.module-cy-user-page span,.module-cy-user-page strong,.module-cy-user-page sub,.module-cy-user-page sup,.module-cy-user-page textarea,.module-cy-user-page u{display:inline}.module-cy-user-page input,.module-cy-user-page select,.module-cy-user-page select option,.module-cy-user-page textarea{margin:0;padding:0;border:0;outline:0}.module-cy-user-page a:focus,.module-cy-user-page input:focus,.module-cy-user-page textarea:focus{outline:0}.module-cy-user-page button,.module-cy-user-page input,.module-cy-user-page select,.module-cy-user-page textarea{background-attachment:scroll}.module-cy-user-page li{clear:none}.module-cy-user-page a{color:#44708e;text-decoration:none}.module-cy-user-page a:hover{color:#ee542a;text-decoration:underline}.module-cy-user-page .clear-g{zoom:1}.module-cy-user-page .clear-g:after{content:".";display:block;visibility:hidden;height:0;clear:both}.module-cy-user-page .global-clear-spacing{letter-spacing:-6px}.module-cy-user-page .global-clear-spacing *{letter-spacing:normal}</style><style type="text/css">.changyan-overlay-lock{overflow:hidden!important;width:auto}.changyan-overlay-lock .changyan-overlay{overflow:auto;overflow-y:scroll}.changyan-overlay{position:absolute;top:0;left:0;overflow:hidden;z-index:8010;background:#000;filter:alpha(opacity=50);opacity:.5;width:auto;height:auto;display:block}.changyan-overlay-fixed{position:fixed;bottom:0;right:0}.changyan-overlay-outer{position:fixed;z-index:8030;top:0;left:0;filter:alpha(opacity=1);opacity:.01}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/icp-tips/005/icp-tips.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-skin/001/cy-skin.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cmt-header/026/cmt-header.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-header .section-title-w{padding:15px 0 13px;height:24px}#SOHUCS #SOHU_MAIN .module-cmt-header .title-join-w{float:left}#SOHUCS #SOHU_MAIN .module-cmt-header .title-join-w .join-wrap-w{line-height:24px;height:24px;overflow:hidden;font-family:"Microsoft YaHei"}#SOHUCS #SOHU_MAIN .module-cmt-header .title-join-w .join-wrap-w a{color:#333}#SOHUCS #SOHU_MAIN .module-cmt-header .title-join-w .join-wrap-w a:hover{text-decoration:none}#SOHUCS #SOHU_MAIN .module-cmt-header .join-wrap-w .wrap-name-w{font-size:17px;color:#333}#SOHUCS #SOHU_MAIN .module-cmt-header .join-wrap-w .wrap-join-w{font-size:16px;color:#333}#SOHUCS #SOHU_MAIN .module-cmt-header .join-wrap-w .join-strong-gw{font-family:Georgia;font-size:18px;color:#ee542a}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w{float:right}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-w{float:right;padding:4px 8px;margin:0 0 0 19px;border:0;display:none}#SOHUCS #SOHU_MAIN .module-cmt-header .user-wrap-w .wrap-icon-w,#SOHUCS #SOHU_MAIN .module-cmt-header .user-wrap-w .wrap-name-w{display:inline-block;line-height:18px;height:18px;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-header .user-wrap-w .wrap-name-w{margin:0 4px 0 0;vertical-align:-5px;color:#44708E}#SOHUCS #SOHU_MAIN .module-cmt-header .user-wrap-w .wrap-icon-w{*position:relative;*top:2px;width:12px;height:7px;overflow:hidden;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/b01.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .wrap-menu-w{width:100%;display:none}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-e{padding:2px 6px;cursor:pointer;position:relative;zoom:1;min-width:52px;border:2px solid #ccd4d9;border-bottom:0;z-index:10}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-e .wrap-icon-w{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/b02.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-e .wrap-menu-w{position:absolute;left:-2px;top:22px;display:block;background-color:#fff;border:2px solid #ccd4d9;border-top:0}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-e .menu-box-w{border:1px solid #fff;border-bottom:0;border-top:0}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-e .menu-box-w a{display:block;width:100%;line-height:16px;height:16px;padding:6px 0;text-decoration:none}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-w .menu-box-w a:hover{background-color:#f2f2f2;color:#44708E}#SOHUCS #SOHU_MAIN .module-cmt-header .title-user-w .user-wrap-e .menu-box-w a .gap-w{padding:0 0 0 6px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w{padding:1px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .block-head-w{float:left;width:42px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .head-img-w,#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .head-img-w img{width:42px;height:42px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .block-post-w{padding:0 0 0 62px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-default-w{height:38px;border:2px solid #ccd4d9;border-right:0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-default-w .default-wrap-w{padding:8px 90px 8px 8px;height:22px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-default-w .default-wrap-w .wrap-text-f{width:100%;height:22px;line-height:22px;font-size:14px;border:0;padding:0;float:left;color:#b8b8b8;background:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-default-w .default-wrap-w .btn-fw{float:right;margin:-10px -90px 0 0;width:90px;height:42px;overflow:hidden;line-height:500px;border:0;padding:0;cursor:pointer;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/bg01.gif);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w{padding:5px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul{float:left;margin:0 -10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li{float:left;padding:10px 12px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-w{width:117px;height:40px;border:1px solid #ccd4d9;background-color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-visitor-b{border:1px dashed #ccd4d9}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-w a{width:107px;height:30px;padding:5px;display:block;text-decoration:none}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-w a:hover{background-color:#f8f8f8}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-w .wrap-icon-w{display:inline-block;width:30px;height:30px;cursor:pointer;vertical-align:-10px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .login-wrap-w .wrap-name-w{width:72px;text-align:center;line-height:16px;display:inline-block;font-size:14px;margin:0 0 0 5px;cursor:pointer;color:#333;*position:relative;*top:2px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .login-wrap-w a:hover .wrap-name-w{color:#333}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .icon30-sohu-w{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/icon30-01.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .icon30-sina-w{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/icon30-02.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .icon30-qq-w{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/icon30-03.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .icon30-phone-w{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/icon30-04.jpg);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-other-w a{width:115px;height:38px;padding:1px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-other-w .wrap-icon-w{display:inline-block;width:70px;height:38px;cursor:pointer;vertical-align:-14px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .post-login-w ul li .login-wrap-other-w .wrap-name-w{width:44px;text-align:center;line-height:16px;display:inline-block;font-size:14px;margin:0 0 0 1px;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .prompt-empty-w{margin:10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .cbox-prompt-w a.prompt-reply-w{display:block;text-align:center;line-height:16px;padding:9px 0 8px;background-color:#ecf8ff;color:#4799d0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .cbox-prompt-w a.prompt-reply-w:hover{background-color:#d9f1ff;color:#4799d0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .prompt-close-w{float:right;width:12px;height:12px;cursor:pointer;padding:11px 12px 10px;margin:-9px 0 0 -36px}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .prompt-close-w .close-img-w{display:block;width:100%;height:100%;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/b03.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .icp-notice{width:100%;text-align:center;font-size:14px;line-height:20px;background:#fef2e2;color:#f16840;font-family:"Microsoft YaHei";margin:10px 0;padding:10px 0}#SOHUCS #SOHU_MAIN .module-cmt-header .icp-notice a{color:#44708E}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .list-comment-empty-w .empty-prompt-w{padding:10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .list-comment-empty-w .empty-prompt-w .prompt-null-w{display:block;text-align:center;line-height:16px;padding:9px 0 8px;background-color:#ecf8ff;color:#0090eb}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .list-close-comment-w .close-comment-prompt-w{padding:10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-header .section-cbox-w .list-close-comment-w .close-comment-prompt-w .close-comment-prompt{border-top:1px solid #dee4e9;background-color:#f5f5f5;color:#333;display:block;text-align:center;line-height:18px;font-size:14px;padding:12px 0 9px;zoom:1;margin:-1px 0 0}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .changyan-change-password-header{border-radius:3px 3px 0 0;height:30px;line-height:18px;padding:14px 0 0;background-color:#fafafa;border-bottom:1px solid #ccd4d9}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .changyan-change-password-header .changyan-change-password-close{float:right;width:18px;height:18px;overflow:hidden;margin:0 12px 0 0}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .changyan-change-password-header .changyan-change-password-closeIcon{background:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/b17.png);width:100%;height:100%;display:block}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .changyan-change-password-header .changyan-change-password-closeIcon:hover{background:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/b18.png)}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .changyan-change-password-header .changyan-change-password-title{font-size:14px;font-weight:700;display:inline-block;padding:0 0 0 20px;color:#333}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw{width:400px;border:1px solid #ccd4d9;background-color:#fff}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-title-dw{height:30px;line-height:18px;padding:14px 0 0;background-color:#fafafa;border-bottom:1px solid #ccd4d9}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-title-dw .title-name-dw{font-size:14px;font-weight:700;display:inline-block;padding:0 0 0 20px;color:#333}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-title-dw .title-close-dw{float:right;width:18px;height:18px;overflow:hidden;margin:0 12px 0 0}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-title-dw .title-close-dw a{width:100%;height:100%;display:block;background-position:-100px -50px}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-title-dw .title-close-dw a:hover{background-position:-100px -75px}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-form-dw{padding:25px 0 0;height:33px;overflow:hidden}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-form-dw .form-name-dw{float:left;line-height:16px;padding:9px 12px 0 0;width:93px;text-align:right;font-size:14px;color:#333}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-form-dw .form-action-dw .action-text-dfw{width:249px;height:31px;line-height:31px;padding:0 0 0 8px;font-size:14px;float:left;vertical-align:-4px;border:1px solid #ccd4d9;color:#333}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-prompt-dw{height:16px;line-height:16px;overflow:hidden;padding:0 0 0 105px!important;margin:2px 0 4px;color:#ee542a;visibility:hidden}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-password-dw{height:33px;overflow:hidden}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-password-dw .password-name-dw{float:left;font-size:14px;line-height:16px;padding:6px 12px 0 0;text-align:right;width:93px;color:#333}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-password-dw .password-action-dw .action-text-dfw{float:left;font-size:14px;height:31px;line-height:31px;padding:0 0 0 8px;width:249px;border:1px solid #ccd4d9;color:#333}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-password-dw .password-action-dw .password-btn-dw{float:left;width:117px;border:1px solid #ccd4d9;height:31px;overflow:hidden;line-height:32px;margin-left:10px;text-align:center;font-size:14px;cursor:pointer}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-password-dw .password-action-dw .password-time-dw{display:none;float:left;width:134px;height:31px;overflow:hidden;line-height:32px;margin-left:10px;padding:0 5px;border:1px solid #d1d2d4;color:#9a9a9a;background-color:#f5f6f8}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-btn-dw{height:33px;overflow:hidden;padding:8px 36px 25px 106px}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-btn-dw .btn-dfw{width:66px;height:33px;padding:0;cursor:pointer;border:0}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-btn-dw .btn-bdf{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/bg11.gif);background-repeat:no-repeat;background-position:-4px 0}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-btn-dw a:hover .btn-bdf{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/bg12.gif)}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-btn-dw a button.btn-cancel,#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .cont-btn-dw a:hover button.btn-cancel{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-header/026/images/btn-cancel-small.jpg);background-position:0 0}#SOHUCS #SOHU_MAIN .change-password-wrapper-dw .forget-password{color:#5788aa;text-decoration:underline;float:right;margin-top:17px}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cmt-box/017/cmt-box.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w{border-radius:3px;border:2px solid #ccd4d9;background-color:#fff;display:block;zoom:1}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .area-textarea-w{position:relative;z-index:9;zoom:1;padding:4px 0 3px 7px;overflow:hidden;background-color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .area-textarea-e .textarea-fw{color:#333;background-color:transparent}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .textarea-fw{width:100%;height:66px;line-height:22px;font-size:14px;resize:none;overflow-x:hidden;overflow-y:auto;background-image:none;color:#b8b8b8}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w{height:39px;background-color:#fafafa;border-top:1px solid #e6eaed}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w{position:relative;float:left;z-index:12}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li{float:left}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w,#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w,#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w{float:right}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li{width:40px;height:39px;border-right:1px solid #e6eaed;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li .effect-w{height:19px;padding:12px 10px 8px;display:block}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li .effect-w i{width:100%;height:100%;display:inline-block;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e{margin-top:-1px;margin-left:-1px;border-left:1px solid #ccd4d9;border-right:1px solid #ccd4d9;border-top:1px solid #ccd4d9}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e .effect-w{padding-bottom:11px!important;cursor:default;background-color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e .effect-w .face-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/face-active.png);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e .effect-w .uploading-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/image-active.png);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-face-w .effect-w{width:19px;padding:11px 11px 9px 10px}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-face-w .effect-w .face-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/face.png);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-face-w .effect-w:hover .face-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/face-active.png)}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw{top:40px;left:-2px;display:none;width:331px;position:absolute;z-index:2}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw{width:327px;padding:0;overflow:hidden;background-color:#fff;border:2px solid #ccd4d9;border-left:2px solid #ccd4d9;border-top:0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw a:hover{background-color:#f2f2f2}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw ul{margin:0 -1px -1px 0;border-bottom:1px dotted #ccd4d9}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw ul li{float:left;display:inline;width:40px;height:36px;overflow:hidden;border-right:1px dotted #ccd4d9}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw ul li a{display:inline-block;width:22px;height:20px;padding:8px 9px;margin:1px 0 0;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w .effect-w{width:20px;padding:10px 10px 8px}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w .effect-w .uploading-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/image.png);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w:hover .uploading-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/image-active.png);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w .uploading-file-w{width:40px;height:39px;overflow:hidden;margin:-39px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-wrapper-dw{top:40px;position:absolute;left:39px;display:none}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw{padding:53px 0 50px;background-color:#fff;border:2px solid #ccd4d9;border-top:0;width:190px}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-word-dw{height:22px;text-align:center;color:#999}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-word-dw .word-icon-dw{display:inline-block;width:22px;height:22px;margin:0 5px 0 0;vertical-align:-6px;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/loading.gif);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-btn-dw{padding:20px 0 0;height:25px;text-align:center}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-btn-dw a{display:inline-block;width:65px;line-height:16px;padding:5px 0 4px;text-align:center;font-size:12px;background-color:#699ec3;color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-btn-dw a:hover{text-decoration:none;background-color:#5788aa}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw{display:none}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw{display:block;width:165px;padding:7px 7px 15px 18px;background-color:#fff;border:2px solid #ccd4d9;border-top:0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-close-dw{height:18px;width:100%}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-close-dw a{float:right;width:18px;height:18px;overflow:hidden;background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/b17.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-close-dw a:hover{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/b18.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-pic-dw{padding:10px 13px 0 2px;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-pic-dw img{display:block;margin:0 auto;min-height:60px;max-height:150px;min-width:60px;max-width:150px}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w,#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w a{height:39px;text-decoration:none!important;display:inline-block;color:#44708e;*width:88px}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w .btn-fw{float:right;width:90px;height:42px;overflow:hidden;line-height:500px;border:0;border-radius:0 0 3px;padding:0;margin:-1px -2px 0 0;cursor:pointer;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/issue01.gif);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w:hover .btn-fw{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/issue02.gif)}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w{padding:0 10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w ul li{float:right;display:inline;padding:11px 0 0;margin:0 10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-w{display:inline-block;width:17px;height:17px}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-name-w{line-height:16px;padding:12px 0 0;margin:0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-name-w .name-b{color:#999}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sohu-cancel-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sohu-cancel.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sohu-click-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sohu-click.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sohu-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sohu.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sina-b:hover{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sina.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sina-click-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sina-click.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sina-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sina-cancel.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-qq-cancel-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/qq-cancel.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-qq-click-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/qq-click.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-qq-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/qq.png) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-box .cbox-prompt-w .prompt-empty-w{display:none;text-align:center;line-height:16px;padding:9px 0 8px;background-color:#fef2e1;color:#ee542a;margin:10px 0}#SOHUCS #SOHU_MAIN .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li object{display:block!important}</style><style type="text/css">.module-cy-user-page .module-cmt-box .post-wrap-w{border-radius:3px;border:2px solid #ccd4d9;background-color:#fff;display:block;zoom:1}.module-cy-user-page .module-cmt-box .post-wrap-w .area-textarea-w{position:relative;z-index:9;zoom:1;padding:4px 0 3px 7px;overflow:hidden;background-color:#fff}.module-cy-user-page .module-cmt-box .post-wrap-w .area-textarea-e .textarea-fw{color:#333;background-color:transparent}.module-cy-user-page .module-cmt-box .post-wrap-w .textarea-fw{width:100%;height:66px;font-family:"Microsoft YaHei";line-height:22px;font-size:14px;resize:none;overflow-x:hidden;overflow-y:auto;background-image:none;color:#b8b8b8}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w{height:39px;background-color:#fafafa;border-top:1px solid #e6eaed}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w{position:relative;float:left;z-index:12}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li{float:left}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w,.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w,.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w{float:right}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li{width:40px;height:39px;border-right:1px solid #e6eaed;cursor:pointer}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li .effect-w{height:19px;padding:12px 10px 8px;display:block}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li .effect-w i{width:100%;height:100%;display:inline-block;cursor:pointer}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e{margin-top:-1px;margin-left:-1px;border-left:1px solid #ccd4d9;border-right:1px solid #ccd4d9;border-top:1px solid #ccd4d9}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e .effect-w{padding-bottom:11px!important;cursor:default;background-color:#fff}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e .effect-w .face-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/face-active.png);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w ul li.function-e .effect-w .uploading-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/image-active.png);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-face-w .effect-w{width:19px;padding:11px 11px 9px 10px}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-face-w .effect-w .face-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/face.png);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-face-w .effect-w:hover .face-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/face-active.png)}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw{top:40px;left:-2px;display:none;width:331px;position:absolute;z-index:2}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw{width:327px;padding:0;overflow:hidden;background-color:#fff;border:2px solid #ccd4d9;border-left:2px solid #ccd4d9;border-top:0}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw a:hover{background-color:#f2f2f2}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw ul{margin:0 -1px -1px 0;border-bottom:1px dotted #ccd4d9}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw ul li{float:left;display:inline;width:40px;height:36px;overflow:hidden;border-right:1px dotted #ccd4d9}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .face-wrapper-dw .wrapper-cont-dw ul li a{display:inline-block;width:22px;height:20px;padding:8px 9px;margin:1px 0 0;overflow:hidden}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w .effect-w{width:20px;padding:10px 10px 8px}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w .effect-w .uploading-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/image.png);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w:hover .uploading-b{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/image-active.png);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .function-uploading-w .uploading-file-w{width:40px;height:39px;overflow:hidden;margin:-39px 0 0}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-wrapper-dw{top:40px;position:absolute;left:39px;display:none}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw{padding:53px 0 50px;background-color:#fff;border:2px solid #ccd4d9;border-top:0;width:190px}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-word-dw{height:22px;text-align:center;color:#999}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-word-dw .word-icon-dw{display:inline-block;width:22px;height:22px;margin:0 5px 0 0;vertical-align:-6px;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/loading.gif);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-btn-dw{padding:20px 0 0;height:25px;text-align:center}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-btn-dw a{display:inline-block;width:65px;line-height:16px;padding:5px 0 4px;text-align:center;font-size:12px;background-color:#699ec3;color:#fff}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw .loading-btn-dw a:hover{text-decoration:none;background-color:#5788aa}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-loading-dw{display:none}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw{display:block;width:165px;padding:7px 7px 15px 18px;background-color:#fff;border:2px solid #ccd4d9;border-top:0}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-close-dw{height:18px;width:100%}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-close-dw a{float:right;width:18px;height:18px;overflow:hidden;background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/b17.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-close-dw a:hover{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/b18.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-pic-dw{padding:10px 13px 0 2px;overflow:hidden}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-function-w .uploading-efw .wrapper-image-dw .image-pic-dw img{display:block;margin:0 auto;max-height:150px;min-height:60px;max-width:150px;min-width:60px}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w,.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w a{height:39px;text-decoration:none!important;display:inline-block;color:#44708e}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w .btn-fw{float:right;width:90px;height:42px;overflow:hidden;line-height:500px;border:0;border-radius:0 0 3px;padding:0;margin:-1px -2px 0 0;cursor:pointer;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/issue01.gif);background-repeat:no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-btn-w:hover .btn-fw{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/issue02.gif)}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w{padding:0 10px 0 0}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w ul li{float:right;display:inline;padding:11px 0 0;margin:0 10px 0 0}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-w{display:inline-block;width:17px;height:17px}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-name-w{line-height:16px;padding:12px 0 0;margin:0}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-name-w .name-b{color:#999}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sohu-cancel-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sohu-cancel.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sohu-click-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sohu-click.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sohu-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sohu.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sina-b:hover{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sina.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sina-click-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sina-click.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-sina-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/sina-cancel.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-qq-cancel-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/qq-cancel.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-qq-click-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/qq-click.png) no-repeat}.module-cy-user-page .module-cmt-box .post-wrap-w .wrap-action-w .action-issue-w .issue-icon-w .icon-qq-b{background:url(//changyan.sohu.com/mdevp/extensions/cmt-box/017/images/qq.png) no-repeat}.module-cy-user-page .module-cmt-box .cbox-prompt-w .prompt-empty-w{display:none;text-align:center;line-height:16px;padding:9px 0 8px;background-color:#fef2e1;color:#ee542a;margin:10px 0}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cmt-list/017/cmt-list.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-list .block-title-gw{padding:12px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .list-hot-w{padding:17px 0 13px}#SOHUCS #SOHU_MAIN .module-cmt-list .block-title-gw ul{border-bottom:2px solid #88abc3;background-color:transparent}#SOHUCS #SOHU_MAIN .module-cmt-list .block-title-gw ul li{float:left;line-height:16px;padding:0 0 10px}#SOHUCS #SOHU_MAIN .module-cmt-list .block-title-gw ul li .title-name-gw{font-size:16px;font-family:'Microsoft YaHei';color:#333}#SOHUCS #SOHU_MAIN .module-cmt-list .block-cont-gw{padding:13px 0 11px;border-bottom:1px dotted #d9d9d9}#SOHUCS #SOHU_MAIN .module-cmt-list .block-cont-gw .cont-head-gw{float:left;width:42px}#SOHUCS #SOHU_MAIN .module-cmt-list .block-cont-gw .cont-head-gw .head-img-gw{padding:7px 0 0;width:42px;height:42px;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-list .block-cont-gw .cont-head-gw .head-img-gw img{width:42px;height:42px}#SOHUCS #SOHU_MAIN .module-cmt-list .block-cont-gw .msg-wrap-gw{padding:0 0 0 62px}#SOHUCS #SOHU_MAIN .module-cmt-list .block-cont-gw .wrap-user-gw{height:24px;line-height:16px;padding:1px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-address-gw,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-name-gw{display:inline-block;padding:5px 7px 0 0;cursor:default}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-address-gw{color:#b8b8b8}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-spread-gw,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-top-gw{float:right;padding:4px 0 0 9px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-spread-gw i,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-top-gw i{display:block;width:31px;height:18px;overflow:hidden;line-height:500px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-top-gw i{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b01.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-spread-gw i{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b02.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-time-gw{float:right;padding:5px 0 0;font-family:Arial;color:#b8b8b8}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-issue-gw{padding:12px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-issue-gw .issue-wrap-gw{line-height:22px;font-size:14px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-issue-gw .issue-wrap-gw .wrap-word-gw img{margin:1px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw{line-height:16px;margin:11px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-from-gw{float:left;line-height:16px}#SOHUCS #SOHU_MAIN .module-cmt-list .action-from-gw,#SOHUCS #SOHU_MAIN .module-cmt-list .action-from-gw a{color:#b8b8b8}#SOHUCS #SOHU_MAIN .module-cmt-list .action-from-gw a:hover{color:#EE542A;text-decoration:underline}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw{text-align:right}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw span a{color:#999;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw span a .icon-name-bg,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw span a:hover,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw span a:hover .icon-name-bg{color:#ee542a}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw .icon-gw{display:inline-block;width:13px;height:14px;overflow:hidden;vertical-align:-3px;*vertical-align:0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw .icon-name-bg{padding:0 0 0 4px;font-family:Arial;*position:relative;*top:3px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw .click-cai-gw a,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw .click-ding-gw a{text-decoration:none}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw a .icon-ding-bg{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b03.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw a:hover .icon-ding-bg{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b05.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw a .icon-cai-bg{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b04.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw a:hover .icon-cai-bg{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b06.png);background-position:0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw .click-disable-eg a .icon-ding-bg,#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw .click-disable-eg a:hover .icon-ding-bg{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b07.png);background-position:0 0;cursor:default}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw .click-disable-eg a .icon-cai-bg,#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw .click-disable-eg a:hover .icon-cai-bg{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/b08.png);background-position:0 0;cursor:default}#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw .click-disable-eg a:hover,#SOHUCS #SOHU_MAIN .module-cmt-list .action-click-gw .click-disable-eg a:hover em.icon-name-bg{text-decoration:none;cursor:default}#SOHUCS #SOHU_MAIN .module-cmt-list .module-cmt-box{margin:10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .module-cmt-box .textarea-fw{height:44px!important}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw .gap-gw{width:1px;height:11px;display:inline-block;overflow:hidden;margin:0 9px -1px 9px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-action-gw .action-click-gw .gap-line-gw{background-color:#e5e5e5}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw{margin:9px 0 6px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .build-floor-gw{padding:4px 4px 6px;border:1px solid #dee4e9;background-color:#fbfbfb}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .build-first-floor-gw{padding:0 5px 7px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .build-msg-gw{padding:8px 10px 0}#SOHUCS #SOHU_MAIN .module-cmt-list .build-msg-gw .user-floor-gw{font-size:14px;font-family:Arial}#SOHUCS #SOHU_MAIN .module-cmt-list .build-msg-gw .wrap-action-gw{margin:8px 0 0;visibility:hidden}#SOHUCS #SOHU_MAIN .module-cmt-list .build-msg-gw .wrap-action-gw-hover{visibility:visible}#SOHUCS #SOHU_MAIN .module-cmt-list .build-middle-floor-dw .wrap-action-gw{margin:3px 0 0;visibility:hidden}#SOHUCS #SOHU_MAIN .module-cmt-list .build-middle-floor-dw .wrap-action-gw-hover{visibility:visible}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .build-middle-floor-dw{padding:8px 10px 10px;border:1px solid #dee4e9;border-top:0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .bulid-middle-hide-floor-dw{padding:5px 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .bulid-middle-hide-floor-dw a{display:block;text-align:center;line-height:16px;font-size:12px;padding:5px 0 4px;background-color:#eee;color:#666}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .block-cont-hover-e{background-color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-admin-gw{display:inline-block;height:21px;padding:0 0 0 24px;overflow:hidden;margin:0 5px 0 -1px;vertical-align:-6px;cursor:pointer;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/p-lvAdmin.png);background-position:left 0;background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-user-gw .user-admin-gw i{display:inline-block;height:21px;line-height:23px;padding:0 5px 0 0;font-size:12px;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/p-lvAdminbg.png);background-position:right 0;background-repeat:no-repeat;color:#fff}</style><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw{margin:13px 0 0;padding:18px 20px 30px}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw{line-height:16px}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li{float:left}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li .gap-gw{width:1px;height:11px;margin:0 7px;vertical-align:-1px;display:inline-block;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-area-gw .area-icon-gw{display:inline-block;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-hide-gw .area-icon-gw{width:9px;height:10px;margin:0 6px 0 0;vertical-align:-1px}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-look-gw .area-icon-gw{width:7px;height:7px;margin:0 7px 0 0;vertical-align:0}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-left-gw .area-icon-gw,#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-right-gw .area-icon-gw{width:7px;height:8px;margin:0 7px 0 0;vertical-align:0}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-area-gw .area-image-gw{text-align:center;margin:9px auto 0}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-area-gw .area-image-gw img{display:block;margin:0 auto;max-width:400px;max-height:400px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-picture-hide-e .picture-box-gw{padding:0;margin:0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-picture-hide-e .picture-box-gw .box-area-gw .area-image-gw{margin:9px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-picture-hide-e .picture-box-gw .box-area-gw .area-image-gw img{margin:0;max-width:150px;max-height:150px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-picture-hide-e .picture-box-gw .box-action-gw{display:none}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .wrap-picture-hide-e .picture-box-gw{margin:10px 0 0}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .wrap-picture-hide-e .picture-box-gw .box-area-gw .area-image-gw{padding:0;text-align:left;zoom:1}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .wrap-picture-show-gw{padding:0 0 4px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .picture-box-gw{margin:13px 0 0;padding:0 0 10px}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw{border:1px solid #dee4e9;background-color:#fbfbfb}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw a{color:#999}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw a:hover{color:#EE542A}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li .gap-bg{background-color:#d6d6d6}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-hide-gw .area-icon-gw{background-position:-175px 0}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-look-gw i.area-icon-gw{background-position:-175px -25px}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-left-gw i.area-icon-gw{background-position:-175px -50px}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-right-gw i.area-icon-gw{background-position:-175px -75px}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-picture-hide-e .area-image-gw img{cursor:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/big.cur),auto!important}#SOHUCS #SOHU_MAIN .module-cmt-list .area-image-e img{cursor:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/small.cur),auto!important}#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-build-gw .picture-box-gw,#SOHUCS #SOHU_MAIN .module-cmt-list .wrap-picture-hide-e .picture-box-gw{border:0;background-color:transparent}#SOHUCS #SOHU_MAIN .module-cmt-list .picture-box-gw .box-action-gw ul li.action-area-gw .area-icon-gw{background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-list/017/images/p-merage-20140113.png);background-repeat:no-repeat}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/hot-topic/011/hot-topic.js"></script><script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/r.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cmt-footer/018/cmt-footer.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-footer{padding:17px 0}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-more-comment-w{margin:20px 0 0;display:none}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-more-comment-w .more-wrap-w{margin:-1px 0 0;background-color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-more-comment-w .more-wrap-w a{display:block;text-align:center;line-height:18px;font-size:12px;padding:7px 0 5px;zoom:1;color:#44708e;background-color:#f5f5f5}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-more-comment-w .more-wrap-w a:hover{color:#ee542a}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-more-comment-w .more-wrap-w a em.wrap-strong-w{font-family:Georgia;font-size:18px;color:#ee542a}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-comment-close-w{display:none}#SOHUCS #SOHU_MAIN .module-cmt-footer .list-comment-close-w .close-wrap-w{display:block;text-align:center;line-height:18px;font-size:14px;padding:12px 0 9px;zoom:1;margin:-1px 0 0;border-top:1px solid #dee4e9;background-color:#f5f5f5;color:#333}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w{text-align:center;font-size:0}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-gw,#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w{font-size:12px;display:inline-block}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-gw a,#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w a{display:inline-block;line-height:18px;height:18px;overflow:hidden;padding:5px 10px 2px;margin:0 4px;text-decoration:none;font-size:14px;border:1px solid #e6e6e6;color:#333}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-gw a:hover,#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w a:hover{border:1px solid #5788aa}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-gw a{margin:0}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w a{font-family:Arial;padding:4px 10px 3px}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w .wrap-ellipsis-w{display:inline-block;width:25px;margin:0 4px;overflow:hidden;vertical-align:top;padding:6px 0 7px;font-size:12px;border:1px solid #e6e6e6}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w a.wrap-current-e{color:#fff;font-weight:700;background-color:#5788aa;border:1px solid #5788aa;cursor:default}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-page-w .page-wrap-w .wrap-ellipsis-w i{width:100%;height:12px;display:block;overflow:hidden;background-image:none;text-align:center;font-family:verdana;color:#333}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-service-w .service-wrap-w{line-height:16px}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-service-w,#SOHUCS #SOHU_MAIN .module-cmt-footer .section-service-w .service-wrap-w,#SOHUCS #SOHU_MAIN .module-cmt-footer .section-service-w .service-wrap-w a{display:block!important;text-align:right!important}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-service-w .service-wrap-w a{display:inline-block!important;color:#44708e}#SOHUCS #SOHU_MAIN .module-cmt-footer .section-service-w .service-wrap-w a:hover{color:#ee542a}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/face/007/face.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-av/003/cy-av.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.sohu.com/activity/advert_static/main.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cmt-float-bar/012/cmt-float-bar.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.sohu.com/activity/advert_static/render-pc.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-float-bar,#SOHUCS #SOHU_MAIN .module-cmt-float-bar *{margin:0;padding:0;border:0;overflow:visible}#SOHUCS #SOHU_MAIN .module-cmt-float-bar,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .close-w a,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .btn-load-bf,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .button-w{background:transparent url(//changyan.sohu.com/mdevp/extensions/cmt-float-bar/012/images/g-merage-20140213.gif) repeat-x scroll 0 0}#SOHUCS #SOHU_MAIN .module-cmt-float-bar ul li a{background:transparent url(//changyan.sohu.com/mdevp/extensions/cmt-float-bar/012/images/botbar/p-merage-20141106.png) repeat-x scroll 0 0}#SOHUCS #SOHU_MAIN .module-cmt-float-bar{z-index:1000000;position:fixed;background-position:0 -450px;bottom:0;left:0;float:none;width:100%;height:38px;line-height:normal;text-align:right;font-weight:400;font-size:100%;font-family:SimSun;_position:absolute;_top:expression(eval(document.documentElement.scrollTop+document.documentElement.clientHeight-this.offsetHeight-(parseInt(this.currentStyle.marginTop, 10)||0)-(parseInt(this.currentStyle.marginBottom, 10)||0)))}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-sohu-w{background-position:0 -160px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar03.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-sina-w{background-position:-35px -160px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar01.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-qq-w{background-position:-70px -160px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar02.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-renren-w{background-position:-105px -160px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar04.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-sohu-w:hover{background-position:0 -125px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar07.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-sina-w:hover{background-position:-35px -125px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar05.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-qq-w:hover{background-position:-70px -125px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar06.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-renren-w:hover{background-position:-105px -125px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/botbar08.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-qzone-w{background-position:0 -195px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/p_ico_03.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-qzone-w:hover{background-position:-35px -195px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/p_ico_04.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-weixin-w{background-position:-70px -195px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/p_ico_05.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .icon-weixin-w:hover{background-position:-105px -195px;filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src="./images/botbar/p_ico_06.png", sizingMethod="crop")}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .clear{zoom:1;overflow:visible;width:auto;height:auto;clear:none;line-height:normal;font-size:12px;visibility:visible}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .clear:after{content:".";display:block;visibility:hidden;height:0;clear:both}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .close-w{width:40px;height:38px;overflow:hidden;position:absolute;right:0;bottom:0;z-index:1}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .close-w a{display:block;width:100%;height:100%;text-indent:-20em;background-position:0 -690px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .close-w a:hover{background-position:-50px -690px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w{width:960px;height:38px;margin:0 auto}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w{padding:0 353px 0 0;height:38px;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-comment-w{float:left;zoom:1;height:38px;line-height:38px;font-family:"Microsoft YaHei",SimSun}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-comment-w a.comment-link-w,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-comment-w span.comment-text-w{padding:8px 20px 0 0;font-size:16px;line-height:22px;color:#5788aa}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-comment-w a.comment-link-w{text-align:center;text-decoration:none}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-comment-w a.comment-link-w:hover{color:#ee542a}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-comment-w a.comment-link-w i{font-family:Georgia;font-size:18px;padding:0 4px;color:#ee542a}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-minwidth-w .cont-form-w{text-align:left;overflow:hidden;position:relative;zoom:1}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w{height:38px;padding:0 100px 0 10px;border-radius:3px 0 0 3px;background-position:0 -490px;border-left:2px solid #5788a9}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .btn-load-bf,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .button-w{float:right;width:100px;height:38px;margin:0 -100px 0 0;line-height:500px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .btn-load-bf{background-position:0 -650px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .button-w{background-position:0 -570px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w .button-w:hover{background-position:0 -610px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-w input.text-w{float:right;width:100%;height:34px;overflow:hidden;margin:2px 0 0;line-height:34px;font-size:14px;font-family:"Microsoft YaHei",SimSun;outline:0;background-color:transparent;color:#999}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-form-w .form-text-e{background-position:0 -530px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w{_margin:-38px 0 0!important;margin:-38px 0 0;float:right;width:353px;height:38px}@media all and (max-width:900px){#SOHUCS #SOHU_MAIN .module-cmt-float-bar .cont-login-w{display:none}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .cont-minwidth-w{padding:0 40px 0 0!important}#SOHUCS #SOHU_MAIN .module-cmt-float-bar.ipad-input-focus{bottom:308px!important}}@media all and (min-width:900px) and (max-width:1300px){#SOHUCS #SOHU_MAIN .module-cmt-float-bar.ipad-input-focus{bottom:398px!important}}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-logout-wrap-w{display:inline-block;padding:4px 10px 4px 20px;height:30px;vertical-align:middle;overflow:visible;*zoom:1;_zoom:1;*display:inline;_display:inline}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-logout-wrap-w ul.post-login-w{overflow:visible}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-logout-wrap-w ul.post-login-w li{list-style:none;cursor:pointer;padding:0 10px 0 0;width:30px;height:30px;float:left}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-logout-wrap-w ul.post-login-w li a{display:inline-block;width:100%;height:100%}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-logout-wrap-w ul.post-login-w li.first-w{line-height:22px;float:left;width:auto;height:auto}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-logout-wrap-w ul.post-login-w li.first-w span{padding:4px 0 0;display:inline-block;font-size:16px;color:#666;font-family:"Microsoft YaHei",SimSun}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-login-wrap-w{display:inline-block;vertical-align:middle;height:38px;padding-left:21px;margin-right:17px;*zoom:1;_zoom:1;*display:inline;_display:inline}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-login-wrap-w .user-info{font-size:16px;line-height:38px;font-family:'Microsoft YaHei';color:#666;position:relative}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-login-wrap-w .user-info img{width:30px;height:30px;border-radius:30px;vertical-align:-9px;margin-right:5px;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-login-wrap-w .user-info span{cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .fb-login-wrap-w .user-info .floatbar-quit{font-family:'Microsoft YaHei';color:#5788aa;text-decoration:none;margin-left:4px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .wrap-cont-w .cont-login-w .new-share{vertical-align:middle;top:1px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share{font-size:14px;font-family:'Microsoft YaHei';color:#5788aa;background:0 0;text-decoration:none;line-height:22px;cursor:pointer;position:relative;padding:4px}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share:hover{border-radius:3px;background-color:#d7d7d7}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .share-select{position:absolute;left:4px;bottom:42px;width:30px;padding:2px 10px 10px;z-index:1000001;display:none;background-color:#ededed;border:1px solid #dbdbdb}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .share-select ul{width:30px;position:relative}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .share-select ul li{float:left;width:30px;height:30px;margin:8px 0 0;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .share-select ul li a{display:block;width:100%;height:100%;text-indent:0;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .share-select .arrow{width:9px;height:6px;position:absolute;left:21px;bottom:-6px;_bottom:-12px;background:url(//changyan.sohu.com/mdevp/extensions/cmt-float-bar/012/images/botbar/g_ico_01.gif) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .ico{display:inline-block;width:18px;height:16px;margin-right:5px;*margin-right:0;*padding-right:5px;vertical-align:-2px;*vertical-align:0;background-image:url(//changyan.sohu.com/mdevp/extensions/cmt-float-bar/012/images/share-ico.png);background-repeat:no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode{position:absolute;bottom:42px;left:-144px;z-index:1000009;width:128px;height:164px;display:none;border:1px solid #c9c9c9;background-color:#f2f2f2}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap{width:90px;height:90px;padding:6px 19px 5px;position:relative;background-color:#fff}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-img{position:relative;display:inline-block;width:100%;height:100%}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-img canvas,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-img img,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-img table{position:absolute;top:0;left:0}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-close{position:absolute;top:6px;right:6px;width:10px;height:10px;overflow:hidden}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-close a,#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-wrap .qrcode-close a:hover{display:block;width:100%;height:100%;background:url(//changyan.sohu.com/mdevp/extensions/cmt-float-bar/012/images/botbar/g_ico_02.gif) no-repeat}#SOHUCS #SOHU_MAIN .module-cmt-float-bar .new-share .qrcode-text{line-height:18px;font-size:12px;padding:4px 8px 0 15px;zoom:1;color:#404040}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-user-page/011/cy-user-page.js"></script><style type="text/css">.module-cy-user-page{width:710px;position:fixed;z-index:2147483647;top:0;zoom:1;font-family:"Microsoft YaHei"}.module-cy-user-page:after{content:".";display:block;visibility:hidden;height:0;clear:both}.cy-mask{width:100%;background:#000;opacity:.6;filter:alpha(opacity=60);position:fixed;z-index:2147483647;top:0;left:0}.module-cy-user-page .cy-user-page-close-btn{cursor:pointer;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-page/011/image/close-btn.png);width:20px;height:20px;float:left;margin-top:15px}.module-cy-user-page .cy-user-page-tab{width:43px;background:#111;height:100%;float:right;position:relative}.module-cy-user-page .cy-tab-list{margin-top:7px;overflow:hidden}.module-cy-user-page .cy-tab-list li{width:100%;cursor:pointer;margin-top:23px}.module-cy-user-page .cy-tab-list li .cy-tab-icon{width:22px;height:22px;margin:0 auto;display:block}.module-cy-user-page .cy-tab-list li .cy-my-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-page/011/image/tab-list-icon1.png)}.module-cy-user-page .cy-tab-list li i{width:100%;display:block;margin-top:2px;font-size:12px;color:#666;text-align:center;font-style:normal}.module-cy-user-page .cy-tab-list li.active .cy-my-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-page/011/image/tab-list-icon-active1.png)}.module-cy-user-page .cy-tab-list li.active i{color:#38a3fd}.module-cy-user-page .cy-tab-list li.info-li:hover .cy-my-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-page/011/image/tab-list-icon-active1.png)}.module-cy-user-page .cy-tab-list li.info-li:hover i{color:#38a3fd}.module-cy-user-page .cy-user-page-tab .power-by-cy{width:26px;height:12px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-page/011/image/logo.png);position:absolute;bottom:12px;left:8px}.module-cy-user-page .cy-user-page-main{float:right;background:#FFF;width:630px;height:100%;position:relative}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-user-info/011/cy-user-info.js"></script><style type="text/css">.module-cy-user-page .module-cy-user-info .cy-user-info-header{padding:20px;height:84px}.module-cy-user-page .module-cy-user-info .cy-user-info-header .cy-user-photo-container{position:relative;width:84px;height:84px;float:left}.module-cy-user-page .module-cy-user-info .cy-user-info-header .cy-user-photo{width:84px;height:84px;display:block;float:left;border-radius:3px}.module-cy-user-page .module-cy-user-info .cy-user-info-header .avatar-mask{width:84px;height:84px;background:#000;opacity:.6;filter:alpha(opacity=60);position:absolute;border-radius:3px;top:0;left:0;display:none;line-height:84px;font-size:16px;text-align:center;color:#FFF;font-family:'Microsoft YaHei';cursor:pointer}.module-cy-user-page .module-cy-user-info .cy-user-info-header .cy-user-photo-container:hover .avatar-mask{display:block}.module-cy-user-page .module-cy-user-info .cy-user-info-header .cy-user-info{float:left;width:505px;height:84px}.module-cy-user-page .module-cy-user-info .cy-user-info-header .cy-user-info .cy-user-info-txt{margin-left:21px;margin-top:14px}.module-cy-user-page .module-cy-user-info .cy-user-info-header .cy-user-info .cy-user-info-txt .cy-user-name{color:#111;font-size:20px;font-family:'Microsoft YaHei';font-style:normal;letter-spacing:1px}.module-cy-user-page .module-cy-user-info .cy-user-my{position:relative}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-tab-active-bar{position:absolute;background:#38a3fd;width:84px;height:2px;margin-left:63px;margin-top:-2px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-label{border-bottom:1px solid #c3cad4}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-label li{width:210px;float:left}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-label li .cy-my-label-item{width:84px;margin:0 auto;height:28px;font-family:'Microsoft YaHei';font-size:14px;color:#333;text-align:center;cursor:pointer;line-height:15px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-label li.active .cy-my-label-item{color:#38a3fd}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-label li .cy-my-label-item .cy-num{font-family:'Microsoft YaHei';font-size:14px;color:#333;font-style:normal}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-label li.active .cy-my-label-item .cy-num{color:#38a3fd}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-container{position:relative}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page{position:absolute;top:0;left:0;width:630px;overflow:hidden;overflow-y:auto;display:none}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-container .active{display:block}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list{width:575px;margin:20px 0 0 20px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i{margin-top:20px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i:first-child{margin-top:0}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-photo{width:40px;float:left}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-photo img{width:40px;height:40px;display:block;border-radius:3px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .module-cmt-box{margin:12px 0 0}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .module-cmt-box .textarea-fw{height:44px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container{float:left;width:518px;margin-left:15px;padding-bottom:17px;border-bottom:1px solid #e9f0f5}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-user-name{font-size:14px;font-family:'Microsoft YaHei';color:#38a3fd;line-height:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment{font-family:'Microsoft YaHei';font-size:16px;color:#111;margin-top:15px;line-height:21px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment img{vertical-align:-2px;*vertical-align:0}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment-other{background:#fdefef}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-auditing-status{font-size:14px;color:#f05858;margin-left:10px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-warning-ico{display:inline-block;width:13px;height:13px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/warning-ico.png);vertical-align:-1px;*vertical-align:3px;margin-right:4px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment-source{font-family:'Microsoft YaHei';font-size:14px;color:#465e72;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-top:14px;display:inline-block;max-width:100%}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment-site-from{font-family:'Microsoft YaHei';float:left;font-size:12px;color:#999;margin-top:6px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment-time{float:right;font-family:'Microsoft YaHei';margin-top:3px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment-time em{display:inline-block;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/time-ico.png);width:12px;height:12px;vertical-align:-2px;*vertical-align:2px;margin-top:4px;*margin-left:4px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-comment-time i{font-style:normal;font-size:12px;color:#999;font-family:'Microsoft YaHei'}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-my-comment-list .comment-list-i .cy-my-comment-container .cy-my-user-name{line-height:15px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-reply-ico{width:13px;height:9px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/reply-ico.png);display:inline-block;margin:0 4px 0 2px;*vertical-align:3px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-my-user-name em{font-style:normal;color:#333;margin-left:4px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-my-user-name em img{vertical-align:-2px;*vertical-align:0}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle{margin-top:18px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group{float:left}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-nonsupport-ico,.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-support-ico{display:inline-block;width:13px;height:14px;margin-right:4px;vertical-align:-2px;*vertical-align:2px;cursor:pointer;float:left}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-support-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/support-ico.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-support-ico:hover{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/support-ico-hover.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-support-ico-disabled,.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-support-ico-disabled:hover{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/support-ico-disabled.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-nonsupport-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/nonsupport-ico.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-nonsupport-ico:hover{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/nonsupport-ico-hover.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-nonsupport-ico-disabled,.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group .cy-nonsupport-ico-disabled:hover{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/nonsupport-ico-disabled.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group em{color:#f05858;font-size:12px;font-style:normal;font-family:Arial;float:left}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-support-group i{margin:0 9px 0 7px;float:left;display:block;height:12px;width:1px;border-left:1px solid #cdcdcd}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-reply .cy-comment-handle .cy-reply-btn{color:#999;font-size:12px;margin-left:22px;font-style:normal;cursor:pointer;float:left}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list{background:#f2f2f2;padding:12px 7px;margin-top:16px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list .cy-arrow-ico{display:block;width:20px;height:10px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/arrow-ico.png);margin:-22px 0 0 33px;*position:absolute;*margin:-22px 0 0 23px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list p{margin-top:12px;*margin-top:0;font-family:'Microsoft YaHei';font-size:14px;padding:0 5px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list p em{color:#51acf9;font-size:14px;font-style:normal;margin:0 6px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list ul{margin-top:3px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list ul .cy-user-item{float:left;margin:6px 5px 0}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page-support .cy-support-list ul .cy-user-item img{width:40px;height:40px;display:block;border-radius:3px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place{display:block;text-align:center;line-height:16px;font-size:16px;font-family:'Microsoft YaHei';width:345px;margin:0 auto;padding-bottom:50px}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place .pet-pic{margin-top:100px;width:345px;height:293px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/notice-empty.png);background-repeat:no-repeat}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place .empty-txt{width:345px;height:22px;margin-top:70px;background-repeat:no-repeat}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place .comment-empty-txt{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/title-nocomment.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place .replay-empty-txt{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/title-noreply.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place .support-empty-txt{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/title-nosupport.png)}.module-cy-user-page .module-cy-user-info .cy-user-my .cy-my-page .cy-my-comment-list .empty-hold-place .power-by-cy-txt{width:345px;height:16px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-info/011/image/power-by.png);background-repeat:no-repeat;margin-top:30px}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-user-avatar/008/cy-user-avatar.js"></script><script src="http://static.bshare.cn/js/libs/fingerprint2.min.js" type="text/javascript" charset="utf-8"></script><script src="http://static.bshare.cn/b/engines/bs-engine.js?v=20160206" type="text/javascript" charset="utf-8"></script><style type="text/css">.module-cy-user-page .module-cy-user-avatar{position:absolute;top:0;z-index:1000}.module-cy-user-page .module-cy-user-avatar .avatar-mask{height:124px}.module-cy-user-page .module-cy-user-avatar .avatar-mask .fake-avatar{width:84px;height:84px;display:none;margin:20px;float:left}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw{padding:17px 20px 0;border-top:1px solid #c3cad4;overflow:hidden;overflow-y:auto;background:#FFF;position:relative}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group-title{font-size:14px;font-family:'Microsoft YaHei'}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group{margin:0 auto;padding:0 0 27px 9px}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group li{width:72px;height:72px;border-radius:3px;float:left;margin:20px 11px 0;cursor:pointer;position:relative}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group li:hover{border:1px solid #ccc;width:70px;height:70px}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group li img{width:72px;height:72px;display:block;border-radius:3px}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group li:hover img{width:70px;height:70px}.module-cy-user-page .module-cy-user-avatar .avatar-page-wrapper-dw .avatar-group li span{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-avatar/008/image/checked.png);background-repeat:no-repeat;width:26px;height:26px;display:block;bottom:0;right:0;position:absolute}.module-cy-user-page .module-cy-user-avatar .avatar-btn-group{border-top:1px solid #c3cad4;height:49px;background:#FFF}.module-cy-user-page .module-cy-user-avatar .avatar-btn-group .avatar-btn{display:block;height:32px;width:84px;text-align:center;line-height:32px;font-size:16px;margin:10px 0 0 20px;cursor:pointer;float:left;font-family:'Microsoft YaHei'}.module-cy-user-page .module-cy-user-avatar .avatar-btn-group .avatar-submit-btn{color:#51acf9;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-avatar/008/image/btn.png)}.module-cy-user-page .module-cy-user-avatar .avatar-btn-group .avatar-cancel-btn{color:#bcc3cc;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-avatar/008/image/btn2.png)}.module-cy-user-page .module-cy-user-avatar .avatar-btn-group .avatar-submit-btn:hover{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-avatar/008/image/btn-hover.png);color:#FFF;text-decoration:none}.module-cy-user-page .module-cy-user-avatar .avatar-btn-group .avatar-cancel-btn:hover{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-avatar/008/image/btn-hover2.png);color:#FFF;text-decoration:none}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-user-view/008/cy-user-view.js"></script><style type="text/css">a.bshareDiv,#bsPanel,#bsMorePanel,#bshareF{border:none;background:none;padding:0;margin:0;font:12px Helvetica,Calibri,Tahoma,Arial,宋体,sans-serif;line-height:14px;}#bsPanel div,#bsMorePanel div,#bshareF div{display:block;}.bsRlogo .bsPopupAwd,.bsRlogoSel .bsPopupAwd,.bsLogo .bsPopupAwd,.bsLogoSel .bsPopupAwd{line-height:16px !important;}a.bshareDiv div,#bsFloatTab div{*display:inline;zoom:1;display:inline-block;}a.bshareDiv img,a.bshareDiv div,a.bshareDiv span,a.bshareDiv a,#bshareF table,#bshareF tr,#bshareF td{text-decoration:none;background:none;margin:0;padding:0;border:none;line-height:1.2}a.bshareDiv span{display:inline;float:none;}div.buzzButton{cursor:pointer;font-weight:bold;}.buzzButton .shareCount a{color:#333}.bsStyle1 .shareCount a{color:#fff}span.bshareText{white-space:nowrap;}span.bshareText:hover{text-decoration:underline;}a.bshareDiv .bsPromo,div.bshare-custom .bsPromo{display:none;position:absolute;z-index:100;}a.bshareDiv .bsPromo.bsPromo1,div.bshare-custom .bsPromo.bsPromo1{width:51px;height:18px;top:-18px;left:0;line-height:16px;font-size:12px !important;font-weight:normal !important;color:#fff;text-align:center;background:url(http://static.bshare.cn/frame/images/bshare_box_sprite2.gif) no-repeat 0 -606px;}div.bshare-custom .bsPromo.bsPromo2{background:url(http://static.bshare.cn/frame/images/bshare_promo_sprite.gif) no-repeat;cursor:pointer;}</style><style type="text/css">.bsBox{display:none;z-index:100000001;font-size:12px;background:url(http://static.bshare.cn/frame/images//background-opaque-dark.gif) !important;padding:6px !important;-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;}.bsClose{_overflow:hidden;cursor:pointer;position:absolute;z-index:10000000;color:#666;font-weight:bold;font-family:Helvetica,Arial;font-size:14px;line-height:20px;}.bsTop{color:#666;background:#f2f2f2;height:24px;line-height:24px;border-bottom:1px solid #e8e8e8;}.bsTop span{float:left;}.bsFrameDiv,#bsMorePanel{border:none;background:#fff;}.bsReturn{float:right;*margin-right:20px;margin-right:36px;text-align:right;cursor:pointer;line-height:24px;color:#666;opacity:0.5;}#bsReturn:hover{text-decoration:underline;opacity:1;}</style><script src="http://static.bshare.cn/b/components/bsMore.js?v=20160206" type="text/javascript" charset="utf-8"></script><style type="text/css">.module-cy-user-view .cy-user-view-header{padding:20px;height:84px}.module-cy-user-view .cy-user-view-header .cy-user-photo-container{position:relative;width:84px;height:84px;float:left}.module-cy-user-view .cy-user-view-header .cy-user-photo{width:84px;height:84px;display:block;float:left;border-radius:3px}.module-cy-user-view .cy-user-view-header .cy-user-view{float:left;width:505px;height:84px}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-user-view-txt{margin-left:21px;margin-top:12px}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-user-view-txt .cy-user-name{color:#111;font-size:20px;font-family:'Microsoft YaHei';font-style:normal;letter-spacing:1px}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info{margin-left:21px;margin-top:17px}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info li{width:89px;height:22px;float:left}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info li .other-info-ico{width:20px;height:22px;display:block;float:left}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info li .comment-info-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-view/008/image/comments.png)}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info li .reply-info-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-view/008/image/reply.png)}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info li .support-info-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-view/008/image/support.png)}.module-cy-user-view .cy-user-view-header .cy-user-view .cy-other-info li .other-info-txt{float:left;font-size:14px;font-family:'Microsoft YaHei';margin-left:6px;margin-top:5px}.module-cy-user-view .cy-user-other{position:relative}.module-cy-user-view .cy-user-other .cy-tab-active-bar{position:absolute;background:#38a3fd;width:84px;height:2px;margin-left:63px;margin-top:-2px}.module-cy-user-view .cy-user-other .cy-other-label{border-bottom:1px solid #c3cad4}.module-cy-user-view .cy-user-other .cy-other-label li{width:210px;float:left}.module-cy-user-view .cy-user-other .cy-other-label li .cy-other-label-item{width:84px;margin:0 auto;height:28px;font-family:'Microsoft YaHei';font-size:14px;color:#333;text-align:center;cursor:pointer;line-height:15px}.module-cy-user-view .cy-user-other .cy-other-label li.active .cy-other-label-item{color:#38a3fd}.module-cy-user-view .cy-user-other .cy-other-label li .cy-other-label-item .cy-num{font-family:'Microsoft YaHei';font-size:14px;color:#333;font-style:normal}.module-cy-user-view .cy-user-other .cy-other-label li.active .cy-other-label-item .cy-num{color:#38a3fd}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page{width:630px;overflow:hidden;overflow-y:auto;display:none}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page-container .active{display:block}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list{width:575px;margin:20px 0 0 20px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li{margin-top:20px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li:first-child{margin-top:0}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-photo{width:40px;float:left}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-photo img{width:40px;height:40px;display:block;border-radius:3px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container{float:left;width:518px;margin-left:15px;padding-bottom:17px;border-bottom:1px solid #e9f0f5}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-user-name{font-size:14px;font-family:'Microsoft YaHei';color:#38a3fd;line-height:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment{font-family:'Microsoft YaHei';font-size:16px;color:#111;margin-top:15px;line-height:21px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment img{vertical-align:-2px;*vertical-align:0}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment-other{background:#fdefef}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-auditing-status{font-size:14px;color:#f05858;padding:4px 0 4px 10px;background:#fdefef;display:block}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-warning-ico{display:inline-block;width:13px;height:13px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-view/008/image/warning-ico.png);vertical-align:-1px;*vertical-align:3px;margin-right:4px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment-source{font-family:'Microsoft YaHei';font-size:14px;color:#465e72;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-top:14px;display:block}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment-site-from{font-family:'Microsoft YaHei';float:left;font-size:12px;color:#999;margin-top:4px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment-time{float:right;font-family:'Microsoft YaHei'}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment-time em{display:inline-block;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-view/008/image/time-ico.png);width:12px;height:12px;vertical-align:-2px;*vertical-align:3px;margin-top:4px;*margin-left:4px}.module-cy-user-page .module-cy-user-view .cy-user-other .cy-other-page .cy-other-comment-list li .cy-other-comment-container .cy-other-comment-time i{font-style:normal;font-size:12px;color:#999;font-family:'Microsoft YaHei'}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-report/007/cy-report.js"></script><style type="text/css">div.bsClear{clear:both;height:0;line-height:0;overflow:hidden;font-size:0;}.bsSearchDiv{padding:5px 15px;background-color:#fafafa;}.bFind-wrapper-top{background:#fff;border-color:#ccc #aaa #aaa #ccc;border-style:solid;border-width:1px;height:16px;padding:4px;margin:0;}.bFind-wrapper-top input{padding:0 !important;border:none !important;box-shadow:none !important;line-height:16px !important;}.bFind-placeholder{background:url("http://static.bshare.cn/css/images/search-icon.gif") no-repeat;display:block;float:left;height:16px;width:16px;}.bFind{background:none;border:none;float:left;font-size:11px !important;height:16px !important;margin-left:3px;outline:none;padding:0;width:400px;}.bsPlatDiv{height:322px;background:#fff;overflow:auto;padding:0 15px;}#bsLogoList{display:block;list-style:none;overflow:hidden;margin:0;padding:0;}#bsLogoList li{float:left;display:inline-block;width:71px;text-align:center;font-size:12px;height:80px;margin:0 !important;}#bsLogoList .bsPlatIcon{cursor:pointer;display:block !important;text-align:center;}#bsLogoList .bsPlatImg{width:32px;height:32px;border:none !important;display:inline-block;}#bsLogoList .bsPlatImg:hover{-moz-border-radius:7px;-webkit-border-radius:7px;border-radius:7px;box-shadow:0 0 15px #a7a8ac;}#bsLogoList .bsPlatName{white-space:nowrap;text-overflow:ellipsis;overflow:hidden;text-align:center;color:#333 !important;margin-top:2px;line-height:140%;*width:70px;}#bsLogoList .bsPromoM{text-align:center;}.bsFooterDiv{height:24px;line-height:24px;padding:0 15px;border-top:1px solid #e8e8e8;background:#f2f2f2;text-align:right;}a.bsLogoLink{color:#666;}.bsLogoLink:hover{text-decoration:underline;}.bsPromoM{background:url(http://static.bshare.cn/frame/images//bshare_box_sprite2.gif) no-repeat top left;}.bsNew,.bsHot,.bsRec,.bsAwd{background-position:0 -552px;width:19px;margin:5px auto 1px;line-height:16px;height:18px;font-size:12px;color:#fff;overflow:hidden;}.bsNew{background-position:0 -570px;}.bsRec{width:30px;background-position:0 -588px;}.bsAwd{background:url(http://static.bshare.cn/frame/images//promot/promote.gif) no-repeat;}</style><style type="text/css">.bshare-custom{font-size:13px;line-height:16px !important;}.bshare-custom a{text-decoration:none;display:none;zoom:1;height:16px;_height:18px;vertical-align:middle;cursor:pointer;color:#2e3192;padding-left:19px;margin-right:3px;filter:alpha(opacity=100);-moz-opacity:1;-khtml-opacity:1;opacity:1;}*+html .bshare-custom a{height:16px}.bshare-custom a:hover{text-decoration:underline;filter:alpha(opacity=75);-moz-opacity:0.75;-khtml-opacity:0.75;opacity:0.75;}.bshare-custom .bshare-more{padding-left:0;color:#000;*display:inline;display:inline-block;}.bshare-custom #bshare-shareto{text-decoration:none;font-weight:bold;margin-right:8px;*display:inline;display:inline-block;}.bshare-custom .bshare-115{background:url("http://static.bshare.cn/frame/images/logos/s4/115.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-139mail{background:url("http://static.bshare.cn/frame/images/logos/s4/139mail.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-9dian{background:url("http://static.bshare.cn/frame/images/logos/s4/9dian.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-baiducang{background:url("http://static.bshare.cn/frame/images/logos/s4/baiducang.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-baiduhi{background:url("http://static.bshare.cn/frame/images/logos/s4/baiduhi.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-bgoogle{background:url("http://static.bshare.cn/frame/images/logos/s4/bgoogle.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-bsharesync{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -18px;*display:inline;display:inline-block;}.bshare-custom .bshare-caimi{background:url("http://static.bshare.cn/frame/images/logos/s4/caimi.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-cfol{background:url("http://static.bshare.cn/frame/images/logos/s4/cfol.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-chouti{background:url("http://static.bshare.cn/frame/images/logos/s4/chouti.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-clipboard{background:url("http://static.bshare.cn/frame/images/logos/s4/clipboard.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-cyolbbs{background:url("http://static.bshare.cn/frame/images/logos/s4/cyolbbs.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-cyzone{background:url("http://static.bshare.cn/frame/images/logos/s4/cyzone.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-delicious{background:url("http://static.bshare.cn/frame/images/logos/s4/delicious.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-dig24{background:url("http://static.bshare.cn/frame/images/logos/s4/dig24.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-digg{background:url("http://static.bshare.cn/frame/images/logos/s4/digg.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-diglog{background:url("http://static.bshare.cn/frame/images/logos/s4/diglog.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-diigo{background:url("http://static.bshare.cn/frame/images/logos/s4/diigo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-douban{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -36px;*display:inline;display:inline-block;}.bshare-custom .bshare-dream{background:url("http://static.bshare.cn/frame/images/logos/s4/dream.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-duitang{background:url("http://static.bshare.cn/frame/images/logos/s4/duitang.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-eastdaymb{background:url("http://static.bshare.cn/frame/images/logos/s4/eastdaymb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-email{background:url("http://static.bshare.cn/frame/images/logos/s4/email.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-evernote{background:url("http://static.bshare.cn/frame/images/logos/s4/evernote.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-facebook{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -54px;*display:inline;display:inline-block;}.bshare-custom .bshare-fanfou{background:url("http://static.bshare.cn/frame/images/logos/s4/fanfou.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-favorite{background:url("http://static.bshare.cn/frame/images/logos/s4/favorite.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-feixin{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -72px;*display:inline;display:inline-block;}.bshare-custom .bshare-friendfeed{background:url("http://static.bshare.cn/frame/images/logos/s4/friendfeed.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-fwisp{background:url("http://static.bshare.cn/frame/images/logos/s4/fwisp.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-ganniu{background:url("http://static.bshare.cn/frame/images/logos/s4/ganniu.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-gmail{background:url("http://static.bshare.cn/frame/images/logos/s4/gmail.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-gmw{background:url("http://static.bshare.cn/frame/images/logos/s4/gmw.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-gtranslate{background:url("http://static.bshare.cn/frame/images/logos/s4/gtranslate.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-hemidemi{background:url("http://static.bshare.cn/frame/images/logos/s4/hemidemi.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-hexunmb{background:url("http://static.bshare.cn/frame/images/logos/s4/hexunmb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-huaban{background:url("http://static.bshare.cn/frame/images/logos/s4/huaban.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-ifengkb{background:url("http://static.bshare.cn/frame/images/logos/s4/ifengkb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-ifengmb{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -90px;*display:inline;display:inline-block;}.bshare-custom .bshare-ifensi{background:url("http://static.bshare.cn/frame/images/logos/s4/ifensi.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-instapaper{background:url("http://static.bshare.cn/frame/images/logos/s4/instapaper.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-itieba{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -108px;*display:inline;display:inline-block;}.bshare-custom .bshare-joinwish{background:url("http://static.bshare.cn/frame/images/logos/s4/joinwish.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-kaixin001{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -126px;*display:inline;display:inline-block;}.bshare-custom .bshare-laodao{background:url("http://static.bshare.cn/frame/images/logos/s4/laodao.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-leihou{background:url("http://static.bshare.cn/frame/images/logos/s4/leihou.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-leshou{background:url("http://static.bshare.cn/frame/images/logos/s4/leshou.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-linkedin{background:url("http://static.bshare.cn/frame/images/logos/s4/linkedin.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-livespace{background:url("http://static.bshare.cn/frame/images/logos/s4/livespace.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-mala{background:url("http://static.bshare.cn/frame/images/logos/s4/mala.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-masar{background:url("http://static.bshare.cn/frame/images/logos/s4/masar.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-meilishuo{background:url("http://static.bshare.cn/frame/images/logos/s4/meilishuo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-miliao{background:url("http://static.bshare.cn/frame/images/logos/s4/miliao.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-mister_wong{background:url("http://static.bshare.cn/frame/images/logos/s4/mister_wong.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-mogujie{background:url("http://static.bshare.cn/frame/images/logos/s4/mogujie.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-moptk{background:url("http://static.bshare.cn/frame/images/logos/s4/moptk.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-msn{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -144px;*display:inline;display:inline-block;}.bshare-custom .bshare-myshare{background:url("http://static.bshare.cn/frame/images/logos/s4/myshare.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-myspace{background:url("http://static.bshare.cn/frame/images/logos/s4/myspace.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-neteasemb{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -162px;*display:inline;display:inline-block;}.bshare-custom .bshare-netvibes{background:url("http://static.bshare.cn/frame/images/logos/s4/netvibes.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-peoplemb{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -180px;*display:inline;display:inline-block;}.bshare-custom .bshare-pinterest{background:url("http://static.bshare.cn/frame/images/logos/s4/pinterest.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-poco{background:url("http://static.bshare.cn/frame/images/logos/s4/poco.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-printer{background:url("http://static.bshare.cn/frame/images/logos/s4/printer.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-printf{background:url("http://static.bshare.cn/frame/images/logos/s4/printf.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-qqmb{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -198px;*display:inline;display:inline-block;}.bshare-custom .bshare-qqshuqian{background:url("http://static.bshare.cn/frame/images/logos/s4/qqshuqian.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-qqxiaoyou{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -216px;*display:inline;display:inline-block;}.bshare-custom .bshare-qzone{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -234px;*display:inline;display:inline-block;}.bshare-custom .bshare-readitlater{background:url("http://static.bshare.cn/frame/images/logos/s4/readitlater.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-reddit{background:url("http://static.bshare.cn/frame/images/logos/s4/reddit.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-redmb{background:url("http://static.bshare.cn/frame/images/logos/s4/redmb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-renjian{background:url("http://static.bshare.cn/frame/images/logos/s4/renjian.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-renmaiku{background:url("http://static.bshare.cn/frame/images/logos/s4/renmaiku.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-renren{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -252px;*display:inline;display:inline-block;}.bshare-custom .bshare-shouji{background:url("http://static.bshare.cn/frame/images/logos/s4/shouji.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-sinaminiblog{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -270px;*display:inline;display:inline-block;}.bshare-custom .bshare-sinaqing{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -288px;*display:inline;display:inline-block;}.bshare-custom .bshare-sinavivi{background:url("http://static.bshare.cn/frame/images/logos/s4/sinavivi.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-sohubai{background:url("http://static.bshare.cn/frame/images/logos/s4/sohubai.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-sohuminiblog{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -306px;*display:inline;display:inline-block;}.bshare-custom .bshare-southmb{background:url("http://static.bshare.cn/frame/images/logos/s4/southmb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-stumbleupon{background:url("http://static.bshare.cn/frame/images/logos/s4/stumbleupon.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-szone{background:url("http://static.bshare.cn/frame/images/logos/s4/szone.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-taojianghu{background:url("http://static.bshare.cn/frame/images/logos/s4/taojianghu.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-tianya{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -324px;*display:inline;display:inline-block;}.bshare-custom .bshare-tongxue{background:url("http://static.bshare.cn/frame/images/logos/s4/tongxue.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-tuita{background:url("http://static.bshare.cn/frame/images/logos/s4/tuita.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-tumblr{background:url("http://static.bshare.cn/frame/images/logos/s4/tumblr.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-twitter{background:url("http://static.bshare.cn/frame/images/logos/s4/sprite/top_logos_sprite.png") no-repeat 0 -342px;*display:inline;display:inline-block;}.bshare-custom .bshare-ushi{background:url("http://static.bshare.cn/frame/images/logos/s4/ushi.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-waakee{background:url("http://static.bshare.cn/frame/images/logos/s4/waakee.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-wealink{background:url("http://static.bshare.cn/frame/images/logos/s4/wealink.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-woshao{background:url("http://static.bshare.cn/frame/images/logos/s4/woshao.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-xianguo{background:url("http://static.bshare.cn/frame/images/logos/s4/xianguo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-xiaomeisns{background:url("http://static.bshare.cn/frame/images/logos/s4/xiaomeisns.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-xinminmb{background:url("http://static.bshare.cn/frame/images/logos/s4/xinminmb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-xyweibo{background:url("http://static.bshare.cn/frame/images/logos/s4/xyweibo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-yaolanmb{background:url("http://static.bshare.cn/frame/images/logos/s4/yaolanmb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-yijee{background:url("http://static.bshare.cn/frame/images/logos/s4/yijee.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-youdao{background:url("http://static.bshare.cn/frame/images/logos/s4/youdao.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-zjol{background:url("http://static.bshare.cn/frame/images/logos/s4/zjol.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-xinhuamb{background:url("http://static.bshare.cn/frame/images/logos/s4/xinhuamb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-szmb{background:url("http://static.bshare.cn/frame/images/logos/s4/szmb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-changshamb{background:url("http://static.bshare.cn/frame/images/logos/s4/changshamb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-hefeimb{background:url("http://static.bshare.cn/frame/images/logos/s4/hefeimb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-wansha{background:url("http://static.bshare.cn/frame/images/logos/s4/wansha.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-189share{background:url("http://static.bshare.cn/frame/images/logos/s4/189share.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-diandian{background:url("http://static.bshare.cn/frame/images/logos/s4/diandian.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-tianji{background:url("http://static.bshare.cn/frame/images/logos/s4/tianji.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-jipin{background:url("http://static.bshare.cn/frame/images/logos/s4/jipin.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-chezhumb{background:url("http://static.bshare.cn/frame/images/logos/s4/chezhumb.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-gplus{background:url("http://static.bshare.cn/frame/images/logos/s4/gplus.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-yidongweibo{background:url("http://static.bshare.cn/frame/images/logos/s4/yidongweibo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-youdaonote{background:url("http://static.bshare.cn/frame/images/logos/s4/youdaonote.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-jschina{background:url("http://static.bshare.cn/frame/images/logos/s4/jschina.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-mingdao{background:url("http://static.bshare.cn/frame/images/logos/s4/mingdao.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-jxcn{background:url("http://static.bshare.cn/frame/images/logos/s4/jxcn.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-qileke{background:url("http://static.bshare.cn/frame/images/logos/s4/qileke.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-sohukan{background:url("http://static.bshare.cn/frame/images/logos/s4/sohukan.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-maikunote{background:url("http://static.bshare.cn/frame/images/logos/s4/maikunote.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-lezhimark{background:url("http://static.bshare.cn/frame/images/logos/s4/lezhimark.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-189mail{background:url("http://static.bshare.cn/frame/images/logos/s4/189mail.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-wo{background:url("http://static.bshare.cn/frame/images/logos/s4/wo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-gmweibo{background:url("http://static.bshare.cn/frame/images/logos/s4/gmweibo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-jianweibo{background:url("http://static.bshare.cn/frame/images/logos/s4/jianweibo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-qingbiji{background:url("http://static.bshare.cn/frame/images/logos/s4/qingbiji.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-duankou{background:url("http://static.bshare.cn/frame/images/logos/s4/duankou.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-qqim{background:url("http://static.bshare.cn/frame/images/logos/s4/qqim.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-kdweibo{background:url("http://static.bshare.cn/frame/images/logos/s4/kdweibo.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-xueqiu{background:url("http://static.bshare.cn/frame/images/logos/s4/xueqiu.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom .bshare-weixin{background:url("http://static.bshare.cn/frame/images/logos/s4/weixin.png") no-repeat;*display:inline;display:inline-block;}.bshare-custom #bshare-more-icon,.bshare-custom .bshare-more-icon{background:url("http://static.bshare.cn/frame/images/logos/s4/more.png") no-repeat;padding-left:19px;}.bshare-custom .bshare-share-count{width:41px;background:transparent url(http://static.bshare.cn/frame/images/counter_box_18.gif) no-repeat;height:18px;line-height:18px !important;color:#333;text-align:center;font:bold 11px Arial,宋体,sans-serif;*display:inline;display:inline-block;zoom:1;_padding-top:2px;}.bshare-custom .bshareDiv{*display:inline;display:inline-block;}</style><script src="http://static.bshare.cn/b/styles/bshareS887.js?v=20160206" type="text/javascript" charset="utf-8"></script><style type="text/css">.cy-report{position:relative;*overflow:hidden}.cy-report .rpt-title{text-align:left;padding-left:20px;background-color:#fafafa;border-bottom:1px solid #cfd6dc}.cy-report .rpt-title span{height:44px;line-height:44px;font-weight:700;font-size:14px}.cy-report .rpt-close{position:absolute;top:16px;right:16px;background-image:url(//changyan.sohu.com/mdevp/extensions/cy-report/007/images/close.png);background-repeat:no-repeat;width:12px;height:12px}.cy-report .rpt-close:hover{cursor:pointer}.cy-report .rpt-reason-item{list-style:none;display:inline-block;*display:inline;*zoom:1;margin-right:80px;width:80px;text-align:left;margin-top:14px}.cy-report .rpt-hint{display:none;padding-top:48px}.cy-report .rpt-hint-image{display:inline-block;width:40px;height:40px;background:url(//changyan.sohu.com/mdevp/extensions/cy-report/007/images/ok.png) no-repeat;margin-bottom:24px}.cy-report .rpt-hint-text{font-size:15px;font-weight:600}.cy-report ul{font-size:0;margin-left:80px;line-height:1}.cy-report .rpt-reason-item .rpt-list-style{display:inline-block;width:10px;height:10px;border:1px solid #a9aeb1;border-radius:50%;margin-right:10px}.cy-report .rpt-reason-item .rpt-text{font-size:14px}.cy-report .rpt-submit{display:inline-block;text-align:center}.cy-report .rpt-submit a{display:inline-block;height:28px;width:100px;border:2px solid #50acf9;line-height:28px;border-radius:14px;margin-top:18px;font-size:16px}.cy-report .rpt-submit:hover{cursor:default}.cy-report .rpt-submit a:hover{color:#000;text-decoration:none}.cy-report .rpt-item-selected .rpt-list-style{background-color:#51adfa}</style><style type="text/css">.dialog-wrapper{z-index:2147483647!important;position:fixed;top:0;left:0;width:100%;height:100%;padding:0;margin:0;border:0;text-align:center;background:none9;*background:0 0;_background:0 0;background-image:url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)9;*background-image:url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7);_background-image:url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7);background-color:#000 transparent;background-color:rgba(0,0,0,.4);zoom:1;filter:progid:DXImageTransform.Microsoft.gradient(startcolorstr=#7F000000, endcolorstr=#7F000000);-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startcolorstr=#7F000000,endcolorstr=#7F000000)";overflow:hidden}.dialog-wrapper-noOverlay{background-color:rgba(0,0,0,0);filter:progid:DXImageTransform.Microsoft.gradient(startcolorstr=#00000000, endcolorstr=#00000000);-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startcolorstr=#00000000,endcolorstr=#00000000)"}.dialog-wrapper *{padding:0;margin:0;border:0}.dialog-docker{position:absolute;visibility:hidden;zoom:1;overflow:visible}.dialog-docker-p0{top:0;left:0;width:100%;height:100%}.dialog-wrapper .dialog{margin:0 auto;color:#000;background-color:#fff;border:1px solid #eee;border-radius:2px;visibility:visible;zoom:1;padding:0}.dialog-docker-p1{top:0;left:0}.dialog-docker-p2{top:0;left:50%}.dialog-docker-p3{top:0;right:0}.dialog-docker-p4{top:50%;left:0}.dialog-docker-p5{top:50%;left:50%}.dialog-docker-p6{top:50%;right:0}.dialog-docker-p7{bottom:0;left:0}.dialog-docker-p8{bottom:0;left:50%}.dialog-docker-p9{bottom:0;right:0}.dialog-docker-p0 .dialog{margin:0;border:0}.dialog-docker-p1 .dialog{position:absolute;top:0;left:0}.dialog-docker-p2 .dialog{position:absolute;top:0;left:-50%}.dialog-docker-p3 .dialog{position:absolute;top:0;right:0}.dialog-docker-p4 .dialog{position:absolute;top:-50%;left:0}.dialog-docker-p5 .dialog{position:absolute;top:-50%;left:-50%}.dialog-docker-p6 .dialog{position:absolute;top:-50%;right:0}.dialog-docker-p7 .dialog{position:absolute;bottom:0;left:0}.dialog-docker-p8 .dialog{position:absolute;bottom:0;left:-50%}.dialog-docker-p9 .dialog{position:absolute;bottom:0;right:0}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-user-notice/016/cy-user-notice.js"></script><style type="text/css">.module-cy-user-notice{display:none;position:relative}.module-cy-user-notice .notice-title{padding-left:24px;height:60px;border-bottom:1px solid #c3cad4;line-height:60px;font-size:20px;font-family:'Microsoft YaHei';position:relative;top:0;left:0}.module-cy-user-notice .notice-info{overflow-x:hidden;overflow-y:auto;position:relative;top:0;left:0}.module-cy-user-notice .notice-info ul{margin-bottom:20px}.module-cy-user-notice .notice-info .notice-empty{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/notice-empty.png);width:339px;height:431px;margin:145px auto 50px}.module-cy-user-notice .notice-info ul.noticeinfo-list{position:relative;top:0;left:0}.module-cy-user-notice .notice-info .noticeinfo-list li{border-bottom:solid 1px #e9f0f5;padding:16px 20px 19px;position:relative}.module-cy-user-notice .notice-info .noticeinfo-list li:hover{background-color:#f3faff}.module-cy-user-notice .notice-info .noticeinfo-list li .info-header{margin-bottom:9px;height:18px;line-height:18px}.module-cy-user-notice .notice-info .noticeinfo-list li .info-header .info-type{float:left;font-size:12px;color:#999;font-family:'Microsoft YaHei'}.module-cy-user-notice .notice-info .noticeinfo-list li .info-header .notice-time{float:right}.module-cy-user-notice .notice-info .noticeinfo-list li .info-header .notice-time em{display:inline-block;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/time-ico.png);width:12px;height:12px;vertical-align:-1px;*vertical-align:3px}.module-cy-user-notice .notice-info .noticeinfo-list li .info-header .notice-time i{margin-left:4px;font-style:normal;font-size:12px;color:#999;font-family:'Microsoft YaHei'}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Microsoft YaHei';padding-right:10px}.module-cy-user-notice .notice-info .noticeinfo-list li .indicator-unread{display:inline-block;width:6px;height:6px;border-radius:50%;background-color:red;position:absolute;bottom:25px;right:20px}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content span{font-size:16px;color:#111;line-height:21px;font-family:'Microsoft YaHei'}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content a.link-mall,.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content a.link-paper{font-size:14px;text-decoration:underline;cursor:pointer;font-family:'Microsoft YaHei'}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content a.link-mall{color:#38a3fd}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content a.link-paper{color:#465e72}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content a.notice-user{font-size:16px;color:#38a3fd;font-family:'Microsoft YaHei';text-decoration:none}.module-cy-user-page .cy-tab-list li .cy-notice-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/tab-list-notice.png)}.module-cy-user-page .cy-tab-list li.active .cy-notice-ico,.module-cy-user-page .cy-tab-list li.notice-li:hover .cy-notice-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/tab-list-icon-active-notice.png)}.module-cy-user-page .cy-tab-list li.notice-li:hover i{color:#38a3fd}.module-cy-user-notice .noticeinfo-detail{position:absolute;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;background-color:#fff;top:0;left:0;padding:0 0 10px;font-family:'Microsoft YaHei'}.module-cy-user-notice .noticeinfo-detail .notice-detail-title{padding-left:24px;height:60px;border-bottom:1px solid #c3cad4;line-height:60px;font-size:20px;font-family:'Microsoft YaHei';width:100%;background-color:#fff;position:relative;top:0;left:0}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap{position:relative;left:0;top:0;min-height:300px}.module-cy-user-notice .noticeinfo-detail a.notice-back{display:inline-block;width:40px;height:100%;background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/back.png);background-repeat:no-repeat;background-position:0 16px;cursor:pointer}.module-cy-user-notice .noticeinfo-detail .comment-desc{font-size:16px;padding:18px 18px 8px}.module-cy-user-notice .noticeinfo-detail .comment-desc span{font-weight:700}.module-cy-user-notice .noticeinfo-detail .comment-detail-wrap{padding:8px 18px;position:relative;left:0;top:0}.module-cy-user-notice .noticeinfo-detail .comment-detail{position:relative;left:0;top:0;margin:8px 0;font-size:16px;background-color:#FAFAFA;border:1px solid #F2F2F2;padding:10px 0 10px 75px}.module-cy-user-notice .noticeinfo-detail .comment-detail .comment-user-figure{position:absolute;top:18px;left:18px;width:40px;height:40px;border-radius:3px;overflow:hidden}.module-cy-user-notice .noticeinfo-detail .comment-detail .comment-user-figure img{width:100%;height:100%}.module-cy-user-notice .noticeinfo-detail .comment-detail .comment-user-name{padding:8px 0;margin:0;position:relative}.module-cy-user-notice .noticeinfo-detail .comment-detail .comment-user-name a{color:#38a3fd;text-decoration:none}.module-cy-user-notice .noticeinfo-detail .comment-detail .comment-content{padding:8px 0;margin-right:20px;line-height:20px}.module-cy-user-notice .noticeinfo-detail .comment-detail a.comment-subhead{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;margin-right:20px;padding:8px 0;text-decoration:none}.module-cy-user-notice .noticeinfo-detail .comment-detail .comment-attrs{padding-right:20px;height:16px}.module-cy-user-notice .noticeinfo-detail .comment-attrs .comment-site{font-size:12px;text-decoration:none;color:#aaa;float:left;line-height:16px;display:inline-block;height:16px;vertical-align:bottom;*zoom:1;_zoom:1;*display:inline;_display:inline}.module-cy-user-notice .noticeinfo-detail .comment-attrs .comment-time{float:right;display:inline-block;line-height:16px;height:16px;vertical-align:bottom;*zoom:1;_zoom:1;*display:inline;_display:inline}.module-cy-user-notice .noticeinfo-detail .comment-attrs .comment-time em{display:inline-block;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/time-ico.png);width:12px;height:12px;vertical-align:-1px;*vertical-align:3px}.module-cy-user-notice .noticeinfo-detail .comment-attrs .comment-time i{margin-left:4px;font-style:normal;font-size:12px;color:#aaa;font-family:'Microsoft YaHei'}.module-cy-user-notice .noticeinfo-detail .comment-attrs .clear-f{float:none;display:none}.module-cy-user-notice .noticeinfo-detail .comment-remark-header-wrap{height:24px;background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/remark-bg.gif);background-position:0 6px;background-repeat-x:none;background-repeat-y:no-repeat;margin:0 40px;text-align:center}.module-cy-user-notice .noticeinfo-detail .comment-remark-header{border-right:12px solid #fff;display:inline-block;background-color:#fff;font-size:16px;color:#ffb026;border-left:12px solid #fff;line-height:24px;*zoom:1;_zoom:1;*display:inline;_display:inline}.module-cy-user-notice .noticeinfo-detail .comment-remark-content{text-align:center;padding:15px 20px;font-size:20px;line-height:24px}.module-cy-user-notice .noticeinfo-detail ul.comment-props{padding-top:32px;position:relative;left:0;top:0}.module-cy-user-notice .noticeinfo-detail ul.comment-props li.comment-prop{height:60px;padding:0 40px;position:relative;left:0;top:0;margin-bottom:40px}.module-cy-user-notice .noticeinfo-detail .prop-bar{border:28px 0;border-top:28px solid #fff;border-bottom:28px solid #fff;height:4px;display:inline-block;position:absolute;width:0}.module-cy-user-notice .noticeinfo-detail .prop-bar-bg{border-top:28px solid #fff;border-bottom:28px solid #fff;height:4px;width:auto;margin:auto}.module-cy-user-notice .noticeinfo-detail .prop-bar-bg-1{background-color:#fee2e2}.module-cy-user-notice .noticeinfo-detail .prop-bar-bg-2{background-color:#d7edff}.module-cy-user-notice .noticeinfo-detail .prop-bar-bg-3{background-color:#f9e9d1}.module-cy-user-notice .noticeinfo-detail .prop-bar-bg-4{background-color:#d9e5fc}.module-cy-user-notice .noticeinfo-detail .prop-bar-bg-5{background-color:#ffdcdc}.module-cy-user-notice .noticeinfo-detail .prop-label{position:absolute;top:3px;left:0;width:54px;height:54px;text-align:center;color:#fff;background-repeat:no-repeat;background-size:100% 100%}.module-cy-user-notice .noticeinfo-detail .prop-label-1{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/prop-bar-1.png)}.module-cy-user-notice .noticeinfo-detail .prop-label-2{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/prop-bar-2.png)}.module-cy-user-notice .noticeinfo-detail .prop-label-3{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/prop-bar-3.png)}.module-cy-user-notice .noticeinfo-detail .prop-label-4{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/prop-bar-4.png)}.module-cy-user-notice .noticeinfo-detail .prop-label-5{background-image:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/prop-bar-5.png)}.module-cy-user-notice .noticeinfo-detail .prop-label .prop-label-text{position:absolute;top:-32px;left:-27px;height:32px;width:108px;line-height:32px;text-align:center;font-size:16px;border-radius:3px}.module-cy-user-notice .noticeinfo-detail .prop-label .prop-label-text i{padding:0 4px;font-size:12px}.module-cy-user-notice .noticeinfo-detail .prop-label .prop-label-arrow{position:absolute;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;top:0;left:21px}.module-cy-user-notice .noticeinfo-detail .prop-bar-1,.module-cy-user-notice .noticeinfo-detail .prop-label-1 .prop-label-text{background-color:#eb6d6d}.module-cy-user-notice .noticeinfo-detail .prop-bar-2,.module-cy-user-notice .noticeinfo-detail .prop-label-2 .prop-label-text{background-color:#6db1eb}.module-cy-user-notice .noticeinfo-detail .prop-bar-3,.module-cy-user-notice .noticeinfo-detail .prop-label-3 .prop-label-text{background-color:#ff9c00}.module-cy-user-notice .noticeinfo-detail .prop-bar-4,.module-cy-user-notice .noticeinfo-detail .prop-label-4 .prop-label-text{background-color:#3e82ff}.module-cy-user-notice .noticeinfo-detail .prop-bar-5,.module-cy-user-notice .noticeinfo-detail .prop-label-5 .prop-label-text{background-color:#fd3838}.module-cy-user-notice .noticeinfo-detail .prop-label-1 .prop-label-arrow{border-top:4px solid #eb6d6d}.module-cy-user-notice .noticeinfo-detail .prop-label-2 .prop-label-arrow{border-top:4px solid #6db1eb}.module-cy-user-notice .noticeinfo-detail .prop-label-3 .prop-label-arrow{border-top:4px solid #ff9c00}.module-cy-user-notice .noticeinfo-detail .prop-label-4 .prop-label-arrow{border-top:4px solid #3e82ff}.module-cy-user-notice .noticeinfo-detail .prop-label-5 .prop-label-arrow{border-top:4px solid #fd3838}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content .feedback-content-wrap{display:inline-block;font-size:100%;line-height:1}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content .feedback-content-wrap span{font-size:100%}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content .feedback-content{display:inline-block;max-width:168px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:1}.module-cy-user-notice .notice-info .noticeinfo-list li .notice-content .feedback-note{color:#38a3fd}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .official-reply-wrap{margin:18px 18px 2px;font-size:16px}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .official-reply-wrap .feedback-title{display:block}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .official-reply-wrap .official-reply{display:block;margin-top:20px;line-height:20px}.module-cy-user-notice .noticeinfo-detail .feedback-content-warp .comment-detail{padding:0}.module-cy-user-notice .noticeinfo-detail .feedback-content-warp .comment-detail .reply-content{padding:10px 25px 10px 10px;line-height:20px;color:#a6a6a6;margin-bottom:25px}.module-cy-user-notice .noticeinfo-detail .feedback-content-warp .comment-detail .feedback-time{position:absolute;right:25px;bottom:10px}.module-cy-user-notice .noticeinfo-detail .feedback-content-warp .comment-detail .feedback-time em{display:inline-block;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/time-ico.png);width:12px;height:12px;vertical-align:-1px;*vertical-align:3px}.module-cy-user-notice .noticeinfo-detail .feedback-content-warp .comment-detail .feedback-time i{margin-left:4px;font-style:normal;font-size:12px;color:#999;font-family:'Microsoft YaHei'}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .feedback-extra{font-size:16px;margin:0 18px 0 30px}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .feedback-qrcode-wrap{margin-top:24px;text-align:center}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .feedback-qrcode-wrap .feedback-qrcode{display:block;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-notice/016/image/qrcode.jpg);width:258px;height:258px;margin:0 auto}.module-cy-user-notice .noticeinfo-detail .notice-content-wrap .feedback-qrcode-wrap .feedback-qrnote{display:inline-block;font-size:16px;margin:10px 0}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-user-feedback/023/cy-user-feedback.js"></script><style type="text/css">.module-cy-user-page .cy-tab-list li .cy-feedback-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/tab-list-icon5.png) no-repeat}.module-cy-user-page .cy-tab-list .feedback-li:hover .cy-feedback-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/tab-list-icon-active5.png) no-repeat}.module-cy-user-page .cy-tab-list .feedback-li:hover .feedback-text{color:#38a3fd}.module-cy-user-page .cy-tab-list li.active .cy-feedback-ico{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/tab-list-icon-active5.png) no-repeat}.module-cy-user-page .cy-tab-list li.active .feedback-text{color:#38a3fd}.module-cy-user-page .module-cy-user-feedback{height:100%;overflow-x:hidden;overflow-y:auto;display:none;position:relative}.module-cy-user-page .module-cy-user-feedback .main{width:100%;height:100%;font-family:"microsoft yahei";position:relative;min-height:680px;overflow-y:auto;overflow-x:hidden}.module-cy-user-page .module-cy-user-feedback .title{width:100%;height:60px;line-height:60px;padding:0 0 0 25px;font-size:20px;font-family:"microsoft yahei";margin-bottom:-60px}.module-cy-user-page .module-cy-user-feedback .form{width:100%;margin:60px 0 0;border:solid #ccc 1px;border-width:1px 0 0;padding:40px 0 0 25px}.module-cy-user-page .module-cy-user-feedback .form .faq{font-size:16px;font-family:"microsoft yahei"}.module-cy-user-page .module-cy-user-feedback .form .faq-questions{margin:10px 0 0;font-size:16px;font-family:"microsoft yahei";overflow:hidden}.module-cy-user-page .module-cy-user-feedback .form .faq-questions .faq-question{float:left;width:278px;margin:10px 0 0;font-family:"microsoft yahei";font-size:14px;color:#666;cursor:pointer}.module-cy-user-page .module-cy-user-feedback .form .faq-questions .faq-question:hover{color:#5eb0fd}.module-cy-user-page .module-cy-user-feedback .form .faq-questions .faq-question .point{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/point.png) no-repeat;width:4px;height:4px;display:inline-block;*display:inline;*zoom:1;vertical-align:middle;margin:0 6px 0 0}.module-cy-user-page .module-cy-user-feedback .form .faq-questions .faq-question:hover .point{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/point-hover.png) no-repeat}.module-cy-user-page .module-cy-user-feedback .form .question{font-size:16px;font-family:"microsoft yahei";margin:40px 0 0}.module-cy-user-page .module-cy-user-feedback .form .questionCon{margin-top:20px;padding:10px 0 10px 10px;width:560px;height:160px;border-radius:3px;resize:none;font-family:"microsoft yahei";border:solid #ccc 1px;overflow:auto;font-size:14px}.module-cy-user-page .module-cy-user-feedback .link{width:560px;margin:40px 0 0;font-family:"microsoft yahei";line-height:1;background-color:#fff}.module-cy-user-page .module-cy-user-feedback .link .phone{font-size:16px}.module-cy-user-page .module-cy-user-feedback .link .select{float:right;color:#ccc}.module-cy-user-page .module-cy-user-feedback .link .text{width:100%;height:38px;line-height:38px;margin:20px 0 0;padding-left:10px;border:solid #ccc 1px;border-radius:3px;font-size:14px;font-family:microsoft yahei}.module-cy-user-page .module-cy-user-feedback .tip{height:36px;line-height:36px;background-color:#e9eef1;font-size:14px;position:absolute;bottom:70px;display:none}.module-cy-user-page .module-cy-user-feedback .tip .ok{width:14px;height:14px;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/ok.png) no-repeat;vertical-align:middle;display:inline-block;*display:inline;*zoom:1;margin:0 0 0 10px}.module-cy-user-page .module-cy-user-feedback .tip .error{background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/error.png) no-repeat}.module-cy-user-page .module-cy-user-feedback .tip .tipText{margin:0 10px 0 0}.module-cy-user-page .module-cy-user-feedback .button{width:100%;height:50px;line-height:50px;position:absolute;bottom:0;border:solid #ccc 1px;border-width:1px 0 0;padding:0 0 0 25px}.module-cy-user-page .module-cy-user-feedback .button .confirm{width:84px;height:32px;line-height:32px;color:#51acf9;border:solid #38a3fd 2px;border-radius:24px;vertical-align:top;display:inline-block;*display:inline;*zoom:1;font-size:16px;font-weight:500;text-align:center;cursor:pointer;margin:9px 0 0}.module-cy-user-page .module-cy-user-feedback .button .confirm:hover{background-color:#38a3fd;color:#fff}.module-cy-user-page .module-cy-user-feedback .feedback-second{width:100%}.module-cy-user-page .module-cy-user-feedback .feedback-second .feedback-detail-title{width:100%;height:59px;line-height:54px;border:1px solid #c3cad4;border-width:0 0 1px}.module-cy-user-page .module-cy-user-feedback .feedback-second .feedback-detail-title .feedback-back{display:inline-block;*display:inline;*zoom:1;background:url(//changyan.sohu.com/mdevp/extensions/cy-user-feedback/023/image/back.png) no-repeat;width:35px;height:28px;margin:0 0 0 24px;vertical-align:middle;cursor:pointer}.module-cy-user-page .module-cy-user-feedback .feedback-second .faq-lists{margin:0 0 0 30px}.module-cy-user-page .module-cy-user-feedback .feedback-second .faq-lists .faq{margin:16px 0 0;width:550px;padding-bottom:21px;border-bottom:1px solid #e9f0f5}.module-cy-user-page .module-cy-user-feedback .feedback-second .faq-lists .faq .faq-title{font-size:16px;height:20px;line-height:20px}.module-cy-user-page .module-cy-user-feedback .feedback-second .faq-lists .faq .faq-title .title-bar{width:3px;height:20px;background-color:#38a3fd;border-radius:2px;display:inline-block;*display:inline;*zoom:1;vertical-align:middle}.module-cy-user-page .module-cy-user-feedback .feedback-second .faq-lists .faq .faq-title .title-text{margin:0 0 0 7px;font-family:microsoft yahei}.module-cy-user-page .module-cy-user-feedback .feedback-second .faq-lists .faq .faq-detail{margin:19px 0 0;font-size:14px;color:#959595;line-height:21px}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cmt-notice-no-task-msg/001/cmt-notice-no-task-msg.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-cmt-notice-dot,.module-cmt-notice-dot{z-index:1000;display:block;width:4px;height:4px;background-color:#F74F4F;border-radius:2px;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-notice-bubble,.module-cmt-notice-bubble{z-index:1000;display:block;min-width:12px;height:16px;line-height:16px;padding:0 2px;text-align:center;font-size:12px;font-style:normal;font-family:arial;color:#FFF;background-color:#F74F4F;border-radius:8px;cursor:pointer}#SOHUCS #SOHU_MAIN .module-cmt-notice{position:fixed;right:0;bottom:0;padding:38px 0;font-family:'Microsoft YaHei';z-index:999999}#SOHUCS #SOHU_MAIN .module-cmt-notice ul.nt-list{max-width:300px;text-align:right;overflow:visible;position:relative}#SOHUCS #SOHU_MAIN .module-cmt-notice ul.nt-list li.nt-item{position:relative;display:inline-block;overflow:auto;max-width:200px;min-width:170px;line-height:24px;background-color:#f8f9f9;color:#000!important;margin:5px 10px;padding:10px 35px 10px 30px;border:1px solid #e9f0f5;border-top-color:#e9f0f5;border-right-color:#d6dde1;border-bottom-color:#d6dde1;border-left-color:#e9f0f5;text-decoration:none;cursor:pointer;font-size:15px}#SOHUCS #SOHU_MAIN .module-cmt-notice ul.nt-list li.nt-item .nt-text{color:#000!important;text-decoration:none}#SOHUCS #SOHU_MAIN .module-cmt-notice ul.nt-list li.nt-item .nt-text i{color:#f74f4f!important;padding:0 4px}#SOHUCS #SOHU_MAIN .module-cmt-notice .nt-close{display:inline-block;position:absolute;right:12px;top:12px;width:10px;height:10px;background:transparent url(//changyan.sohu.com/mdevp/extensions/cmt-notice-no-task-msg/001/images/close.gif) repeat-x scroll 0 0}#SOHUCS #SOHU_MAIN .module-cmt-notice .nt-close:hover{background-position:-10px 0}.module-cy-user-page .module-cmt-notice-dot{position:absolute;top:0;right:6px;width:6px;height:6px;background-color:#F74F4F;border-radius:6px}.module-cy-user-page .module-cmt-notice-bubble{display:inline-block;position:absolute;min-width:12px;height:16px;line-height:16px;padding:0 2px;text-align:center;font-size:12px;font-style:normal;font-family:arial;color:#FFF;background-color:#F74F4F;border-radius:16px;margin-left:4px}.module-cmt-float-bar .module-cmt-notice-bubble{position:absolute;top:-8px;*top:-4px;left:20px;min-width:12px;height:16px;line-height:16px;padding:0 2px;text-align:center;font-size:12px;font-style:normal;font-family:arial;color:#FFF;background-color:#F74F4F;border-radius:8px}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-grade/004/cy-grade.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cy-score/002/cy-score.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/jump-url/003/jump-url.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .more-comment{padding:0 0 17px}#SOHUCS #SOHU_MAIN .more-comment a{color:#44708e;background-color:#f5f5f5;padding:7px 0 5px;line-height:18px;display:block;text-align:center}#SOHUCS #SOHU_MAIN .more-comment a em{font-family:Georgia;font-size:18px;color:#ee542a}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/disable-user-photo/005/disable-user-photo.js"></script><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/sohu-treaty/001/sohu-treaty.js"></script><style type="text/css">#SOHUCS #SOHU_MAIN .module-sohu-treaty .title-link-w{padding:12px 0 0;font-size:12px;color:#ccd3d9;text-align:right}#SOHUCS #SOHU_MAIN .module-sohu-treaty .title-link-w a{display:inline-block;line-height:16px;color:#ccd3d9}#SOHUCS #SOHU_MAIN .module-sohu-treaty .title-link-w a:hover{text-decoration:underline}</style><script type="text/javascript" charset="UTF-8" src="http://changyan.itc.cn/mdevp/extensions/cui/002/swfupload.v2.2.0/swfupload.js"></script><script src="http://bshare.optimix.asia/bshare_view?Callback=bShare.viewcb&amp;url=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;h=&amp;uuid=fbe7b28e-050d-4ab3-9af4-0740ed16ea11&amp;sc=1&amp;l=17&amp;lite=1&amp;ref=http%3A%2F%2Fnews.baidu.com%2Fns%3Fword%3D%25E7%2594%259F%25E6%2580%2581%25E8%25A1%25A5%25E5%2581%25BF%26pn%3D80%26cl%3D2%26ct%3D1%26tn%3Dnews%26rn%3D20%26ie%3Dutf-8%26bt%3D0%26et%3D0&amp;q=%E7%94%9F%E6%80%81%E8%A1%A5%E5%81%BF&amp;cs=UTF-8&amp;ot=生态补偿探索候鸟保护新机制 让候鸟平安返乡(1)_光明日报 _光明网&amp;kws=候鸟&amp;fp=e85bd2c0f55c775fa47a30da16457da7&amp;b=bs184e18" type="text/javascript" charset="utf-8"></script><style type="text/css">a.bsSiteLink{text-decoration:none;color:#666;}a.bsSiteLink:hover{text-decoration:underline;}a.bshareDiv{overflow:hidden;height:16px;line-height:18px;font-size:14px;color:#333;padding-left:0;}a.bshareDiv:hover{text-decoration:none;}div.bsTitle{padding:0 8px;border-bottom:1px solid #e8e8e8;color:#666;background:#f2f2f2;text-align:left;}div.buzzButton{cursor:pointer;}div.bsRlogo,div.bsRlogoSel{width:68px;float:left;margin:0;padding:2px 0;}div.bsRlogo a,div.bsRlogoSel a{float:left;}div.bsLogo,div.bsLogoSel{float:left;width:111px;text-align:left;height:auto;padding:2px 4px;margin:2px 0;white-space:nowrap;overflow:hidden;}div.bsLogoSel,div.bsRlogoSel{border:1px solid #ddd;background:#f1f1f1;}div.bsLogo,div.bsRlogo{border:1px solid #fff;background:#fff;}div.bsLogo a,div.bsLogoSel a{display:block;height:16px;line-height:16px;padding:0 0 0 24px;text-decoration:none;float:left;overflow:hidden;}div.bsLogoSel a,div.bsRlogoSel a{color:#000;border:none;}div.bsLogo a,div.bsRlogo a{color:#666;border:none;}div.bsLogoLink{width:121px;overflow:hidden;background:#FFF;float:left;margin:3px 0;}#bsPanel{position:absolute;z-index:100000000;font-size:12px;width:258px;background:url(http://static.bshare.cn/frame/images/background-opaque-dark.png);padding:6px;-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;}div.bsClear{clear:both;height:0;line-height:0;font-size:0;overflow:hidden;}div.bsPopupAwd{background: url(http://static.bshare.cn/frame/images//bshare_box_sprite2.gif) no-repeat top left;background-position:0 -624px;width:18px;padding-left:3px;text-align:center;float:left;margin-left:2px;height:15px;font-size:12px;color:#fff;overflow:hidden;}div.bsRlogo .bsPopupAwd,div.bsRlogoSel .bsPopupAwd{float:left;margin:5px 0 0 -14px;}</style><style type="text/css">a.bsSiteLink{text-decoration:none;color:#666;}a.bsSiteLink:hover{text-decoration:underline;}a.bshareDiv{overflow:hidden;height:16px;line-height:18px;font-size:14px;color:#333;padding-left:0;}a.bshareDiv:hover{text-decoration:none;}div.bsTitle{padding:0 8px;border-bottom:1px solid #e8e8e8;color:#666;background:#f2f2f2;text-align:left;}div.buzzButton{cursor:pointer;}div.bsRlogo,div.bsRlogoSel{width:68px;float:left;margin:0;padding:2px 0;}div.bsRlogo a,div.bsRlogoSel a{float:left;}div.bsLogo,div.bsLogoSel{float:left;width:111px;text-align:left;height:auto;padding:2px 4px;margin:2px 0;white-space:nowrap;overflow:hidden;}div.bsLogoSel,div.bsRlogoSel{border:1px solid #ddd;background:#f1f1f1;}div.bsLogo,div.bsRlogo{border:1px solid #fff;background:#fff;}div.bsLogo a,div.bsLogoSel a{display:block;height:16px;line-height:16px;padding:0 0 0 24px;text-decoration:none;float:left;overflow:hidden;}div.bsLogoSel a,div.bsRlogoSel a{color:#000;border:none;}div.bsLogo a,div.bsRlogo a{color:#666;border:none;}div.bsLogoLink{width:121px;overflow:hidden;background:#FFF;float:left;margin:3px 0;}#bsPanel{position:absolute;z-index:100000000;font-size:12px;width:258px;background:url(http://static.bshare.cn/frame/images/background-opaque-dark.png);padding:6px;-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px;}div.bsClear{clear:both;height:0;line-height:0;font-size:0;overflow:hidden;}div.bsPopupAwd{background: url(http://static.bshare.cn/frame/images//bshare_box_sprite2.gif) no-repeat top left;background-position:0 -624px;width:18px;padding-left:3px;text-align:center;float:left;margin-left:2px;height:15px;font-size:12px;color:#fff;overflow:hidden;}div.bsRlogo .bsPopupAwd,div.bsRlogoSel .bsPopupAwd{float:left;margin:5px 0 0 -14px;}</style></head>
+<body><img src="http://afptrack.alimama.com/opt?bid=0ab74121000057285f712efb019fdfe6&amp;pid=mm_113716014_12970037_52772462&amp;cid=1505&amp;mid=2919&amp;oid=275&amp;productType=1&amp;cb=215087889" style="display: none;"><img src="http://afptrack.alimama.com/imp?bid=0ab74121000057285f712efb019fdfe6&amp;pid=mm_113716014_12970037_52772462&amp;cid=1505&amp;mid=2919&amp;oid=275&amp;productType=1&amp;e=h5ph3Ar8rtmsjluw4xAyS1QowhUDb8kEOg7jWnKuP5d2VeXfOmxTHeF9G8O%2BDM4U&amp;k=65&amp;cb=416453951" style="display: none;"><img src="http://afptrack.csbew.com/opt?bid=0a67349c000057285f70105704ee5b33&amp;pid=mm_113716014_12970037_52772602&amp;cid=2482&amp;mid=3264&amp;oid=376&amp;productType=1&amp;cb=926787354" style="display: none;"><img src="http://afptrack.csbew.com/imp?bid=0a67349c000057285f70105704ee5b33&amp;pid=mm_113716014_12970037_52772602&amp;cid=2482&amp;mid=3264&amp;oid=376&amp;productType=1&amp;e=ME1rhOOdKyqMpq0A4M5XOy9Fsvytu%2FqkwV4ppYXa9JHv4VC5ZdHFOy%2BeulKuEBd4&amp;k=65&amp;cb=823307585" style="display: none;"><img src="http://afptrack.csbew.com/opt?bid=0ab74121000057285f702ef101a0c816&amp;pid=mm_113716014_12970037_52772603&amp;cid=2406&amp;mid=3257&amp;oid=187&amp;productType=1&amp;cb=49188037" style="display: none;"><img src="http://afptrack.csbew.com/imp?bid=0ab74121000057285f702ef101a0c816&amp;pid=mm_113716014_12970037_52772603&amp;cid=2406&amp;mid=3257&amp;oid=187&amp;productType=1&amp;e=1H10OvbDTHusjluw4xAyS1QowhUDb8kErO63jeMzNGrutKtr18jOjk2%2F8aVxs1Nd&amp;k=65&amp;cb=669381446" style="display: none;"><img src="http://afptrack.csbew.com/opt?bid=0a67349c000057285f70104f04ef0807&amp;pid=mm_113716014_12970037_52772596&amp;cid=2485&amp;mid=3274&amp;oid=376&amp;productType=1&amp;cb=385275225" style="display: none;"><img src="http://afptrack.csbew.com/imp?bid=0a67349c000057285f70104f04ef0807&amp;pid=mm_113716014_12970037_52772596&amp;cid=2485&amp;mid=3274&amp;oid=376&amp;productType=1&amp;e=iGn5b7L1772Mpq0A4M5XOy9Fsvytu%2FqkwV4ppYXa9JHlCwi2dBruXh5ratQhwKRD&amp;k=65&amp;cb=359020082" style="display: none;"><iframe src="http://s.csbew.com/acookie.html" style="width: 0px; height: 0px; display: none;"></iframe>
+<div class="noMobile">
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+
+	<meta name="msapplication-navbutton-color" content="#d40004">
+	<meta content="name=光明日报;action-uri=http://epaper.gmw.cn/gmrb/;icon-uri=http://img.gmw.cn/ico/paper.ico" name="msapplication-task">
+	<meta content="name=时评;action-uri=http://guancha.gmw.cn/;icon-uri=http://img.gmw.cn/ico/guancha.ico" name="msapplication-task">
+	<meta content="name=科技探索;action-uri=http://tech.gmw.cn/;icon-uri=http://img.gmw.cn/ico/tech.ico" name="msapplication-task">
+	<meta content="name=文化娱乐;action-uri=http://culture.gmw.cn/;icon-uri=http://img.gmw.cn/ico/e.ico" name="msapplication-task">
+
+	<link rel="stylesheet" type="text/css" href="http://img.gmw.cn/css/jquery.mbox.css" media="all">
+	<link rel="stylesheet" type="text/css" href="http://img.gmw.cn/css/public_gmw.css?fan" media="all">
+	<script type="text/javascript" src="http://img.gmw.cn/js/jquery.js"></script>
+	<script type="text/javascript" src="http://img.gmw.cn/js/jquery.contentTab.js"></script>
+	<script src="http://img.gmw.cn/js/jquery.mbox.js"></script>
+	<script src="http://img.gmw.cn/js/eggshell.js"></script>
+
+	<!--[if IE 6]>
+	<script type="text/javascript" src="http://img.gmw.cn/js/ie6png.js" ></script>
+	<script type="text/javascript">DD_belatedPNG.fix('#GMWlogo,#Larrow,#Rarrow');   </script>
+	<![endif]-->
+	<style type="text/css">
+	*{font-family:"微软雅黑"}
+	#channelHead{ width:100%; background:#f1f1f1; border-bottom:1px #999 solid;}
+	.headtopNav{ width:1000px; margin:0 auto; padding:4px 0; height:24px; line-height:24px; _padding-bottom:0;}
+	.headtopNav span{ margin:0 5px;color:#bb2737;}
+	.channeLogin{float:left; height:24px; line-height:24px;text-align: right;width: 550px;}
+	.headLogin{ width:80px; height:18px; border:1px #ccc solid;}
+	.headSubLog{ width:50px; height:24px; margin-right:4px;}
+	.whereGo li{ width:100px; height:24px; background:#fff; border:1px #999 solid; float:right; text-align:center; list-style:none; cursor:pointer;}
+	.whereGo{ margin-right:9px;}
+	.whereGo li a{ font-size:12px; color:#000; line-height:24px;}
+	.whereGo li ul{ display:none;}
+	.whereGo li ul li{ border-top:none; position:relative; z-index:2; left:1px; top:1px; background:#f2f2f2;}
+	.whereGo li ul a:hover li{ background:#bb2737; color:#fff;}
+	.whereGo li:hover ul{ display:block;}
+	.navBg{ width:100%; background:#fff;}
+	.channelNav{ width:1000px; text-align:center; margin:0 auto; clear:both; height:24px; line-height:24px; position:relative; z-index:1; padding-top:6px; background:#fff;}
+	.channelNav li{ padding:0 9px; list-style:none; float:left; border-right:1px #ccc solid; font-size:12px; color:#000; line-height:14px;}
+	.channelNav li a{ color:#000;}
+	.channelNav li a:hover{ color:#bb2737;}
+	.lightgrey12{ font-size:12px; color:#ccc;}
+	#back_top{ display:none;}
+	.footLine{ width:1000px; margin:0 auto; height:0; font-size:0; border-bottom:1px #999 solid;}
+	</style>
+	<div id="back_top">
+	<a><span>回到顶部</span></a>
+	</div>
+	<div class="banner1000" id="banner_top"></div>
+	<div class="banner1000" id="banner_top2"></div>
+	<div id="channelHead">
+		<div class="grey12_3 headtopNav">
+			<div style="width:320px; float:left;">
+               <a title="光明网" href="http://www.gmw.cn/"><img id="GMWlogo" src="http://img.gmw.cn/pic/Logo.png" style="float:left; padding-top:2px;" alt="光明网"></a>
+                <span></span>
+                <span><a href="http://www.gmw.cn/" style="color:#bb2737;">简体版</a></span>
+                <span>|</span>
+                <span><a href="http://chinese.gmw.cn/" style="color:#bb2737;">海外版</a></span>
+                <span>|</span>
+                <span><a href="http://en.gmw.cn/" style="color:#bb2737;">English</a></span>
+                <span>|</span>
+                <span><a href="http://guancha.gmw.cn/2012-04/27/content_4048222.htm" style="color:#bb2737;">投稿</a></span>
+            </div>
+			<div class="channeLogin" id="loginbar_new"><input class="headSubLog" type="submit" value="登录" onclick="gotoLogin('http://news.gmw.cn/2016-04/14/content_19695837.htm')"><input class="headSubLog" name="login" type="button" value="注册" onclick="document.location.href='http://home.gmw.cn/register.php?callback=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm'"></div>
+			<ul class="whereGo">
+				<li><a href="http://home.gmw.cn/">您想去哪里？</a>
+					<ul class="wgse">
+						<a href="http://pic.gmw.cn/"><li>光明图片</li></a>
+						<a href="http://guancha.gmw.cn/2012-04/27/content_4048222.htm"><li>我要投稿</li></a>
+						<a href="http://training.gmw.cn/"><li>光明培训</li></a>
+					</ul>
+				</li>
+			</ul>
+		</div>
+		<div class="clear"></div>
+	</div>
+	<div class="navBg">
+		<div class="channelNav">
+			<li><a href="http://politics.gmw.cn/">时政</a></li><li><a href="http://world.gmw.cn/">国际</a></li><li><a href="http://guancha.gmw.cn/">时评</a></li><li><a href="http://theory.gmw.cn/">理论</a></li><li><a href="http://culture.gmw.cn/">文化</a></li><li><a href="http://tech.gmw.cn/">科技</a></li><li><a href="http://edu.gmw.cn/">教育</a></li><li><a href="http://economy.gmw.cn/">经济</a></li><li><a href="http://life.gmw.cn/">生活</a></li><li><a href="http://legal.gmw.cn/">法治</a></li><li><a href="http://mil.gmw.cn/">军事</a></li><li><a href="http://health.gmw.cn/">卫生</a></li><li><a href="http://yangsheng.gmw.cn/">养生</a></li><li><a href="http://lady.gmw.cn/">女人</a></li><li><a href="http://e.gmw.cn/">娱乐</a></li><li><a href="http://v.gmw.cn/">电视</a></li><li><a href="http://photo.gmw.cn">图片</a></li><li><a href="http://blog.gmw.cn/">博客</a></li><li><a href="http://bbs.gmw.cn/">论坛</a></li><li><a href="http://qp.gmw.cn/?from=publicdh">棋牌</a></li><li><a href="http://epaper.gmw.cn/">光明报系</a></li><li style="border:none;"><a href="http://www.gmw.cn/map.htm">更多&gt;&gt;</a></li>
+		</div>
+	</div>
+</div>
+<div class="noMobile">
+	<link rel="stylesheet" type="text/css" href="http://img.gmw.cn/css/public_gmw.css">
+	<div class="banner1000" id="banner_top_index"></div>
+	<div class="banner1000" id="banner_top02"></div>
+	<div class="banner1000" id="banner"></div>
+	<div class="banner1000" id="bannertop1000"></div>
+	<div class="clear"></div>
+</div>
+
+<div class="contentWrapper">
+  <div class="contentLeft">
+    <div id="contentBreadcrumbs2" class="black12">
+      <a href="../../node_4108.htm"><img src="http://img.gmw.cn/pic/contentlogo/4108.gif" id="ArticleChannelID"></a><a href="http://www.gmw.cn/" target="_blank">首页</a><font class="">&gt; </font><a href="../../node_4108.htm" target="_blank" class="">光明日报</a>
+    </div>
+    <div id="articlePreTitle">
+
+    </div>
+    <h1 id="articleTitle">
+      生态补偿探索候鸟保护新机制 让候鸟平安返乡
+    </h1>
+    <div id="articleSubtitle">
+
+    </div>
+    <div id="contentMsg">
+      <span id="pubTime">2016-04-14 05:49</span>　<span id="source">来源：<a href="http://epaper.gmw.cn/gmrb/html/2016-04/14/nw.D110000gmrb_20160414_1-04.htm" target="_blank">光明网-《光明日报》</a></span>　<span id="author"></span><span><a href="#commentAnchor" style="color:#f33">我有话说</a></span></div>
+	<div class="noMobile"><meta content="text/html; charset=utf-8" http-equiv="Content-Type"></div>
+    <div id="contentMain">
+      <!--enpproperty <articleid>19695837</articleid><date>2016-04-14 05:49:42.0</date><author></author><title>生态补偿探索候鸟保护新机制 让候鸟平安返乡(1)_光明日报
+_光明网</title><keyword>候鸟</keyword><subtitle></subtitle><introtitle></introtitle><siteid>2</siteid><nodeid>4108</nodeid><nodename>光明日报</nodename><nodesearchname>光明日报</nodesearchname>/enpproperty--><!--enpcontent--><!--enpcontent--><p>　　<strong><font color="#993300">【多彩神州·春天的故事】</font></strong></p>
+<p>　　眼下，我国北方地区天气回暖，又进入到候鸟迁徙的季节，在年复一年的南来北往中，它们既要承受来自自然界的生存考验，又要面临人类活动带来的侵扰——湿地退化，人鸟争粮，以观赏之名的打搅，甚至是无情捕杀……</p>
+<p>　　野生鸟类尤其是候鸟对栖息环境质量的要求极高，因此成为国际公认的最能直观反映地区生态文明发展程度的标志。为了给候鸟营造一个安全的栖息环境，最大限度地排除人类活动的干扰，各地采取了很多强有力的保护措施。</p>
+<p align="center"><img id="33351074" align="center" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160414/eca86bd9d822187903e728.jpg" title="生态补偿探索候鸟保护新机制 让候鸟平安返乡" alt="生态补偿探索候鸟保护新机制 让候鸟平安返乡"></p>
+<p style="TEXT-ALIGN: center" align="center"><font color="blue">4月9日，众多候鸟在内蒙古克什克腾旗达里诺尔湖流域的湖畔栖息、飞翔。新华社发（孙国树摄）</font></p>
+<p><strong>　<font color="#993300">　保护湿地，守护候鸟家园</font></strong></p>
+<p>　　保护好原生态的湖泊、湿地，是给候鸟最好的“礼物”。近年来，不少地方通过立法保护湿地、退耕还林还湿、改善湿地水质等措施，优化候鸟的生存环境，为人类与这些“长着翅膀的朋友”和谐相处创造更好的条件。</p>
+<p>　　辽宁法库县是著名的“白鹤之乡”，每年70%以上的白鹤东部种群都会在这里的獾子洞湿地停歇。湿地恢复工程成为法库县保护湿地的重头戏，目前法库县已完成宽10米、深1米的环湖沟7000余延长米的治理任务，预计到今年5月可完成11800米，包括河滩治理、植被恢复、疏浚清淤等全部工程将于8月完成。</p>
+<p>　　湿地的恢复为候鸟提供了良好的休憩地。“上个月的一天早上，我们监测到的迁徙回来的白鹤已经有200多只了！”法库县旅游局局长杨秀玲兴奋地说。</p>
+<p>　　云南昭通大山包自然保护区内分布着5958公顷高山沼泽化草甸湿地，是黑颈鹤等越冬水禽的重要栖息地。近年来，当地实施了移民搬迁、退耕还林、退耕还湿等多个保护恢复项目。目前，大山包国际重要湿地已被列入国家2014年湿地生态效益补偿试点，中央财政资金将对周边村民提供生态效益补偿，并进行村庄生态环境整治。</p>
+<p>　　每年秋冬季，中科院昆明动物研究所研究员杨晓君的团队都会去大山包做观测。据他介绍，这几年到大山包越冬的黑颈鹤数量稳中有升，从1990年的200余只增加到2004年1月14日的1186只，“2014年11月28日更是曾经记录到1269只”。</p>
+<!--/enpcontent--><div id="contentLiability">[责任编辑:徐皓]</div><div width="100%" id="displaypagenum"><p></p><center> <span class="pagefontcon">1</span> <a href="content_19695837_2.htm" class="pagefontcon">2</a> <a href="content_19695837_2.htm" class="ptfontcon">下一页</a> <a href="content_19695837_2.htm" class="ptfontcon">尾页</a> <span class="pagefontcon" style="background:#fff; color:#000;">共2页</span></center><p></p></div><div id="mpagecount" style="display:none">2</div><div id="mcurrentpage" style="display:none">1</div><!--/enpcontent-->
+    </div>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<div class="noMobile">
+	<div id="sc0001"></div>
+	<!-- AFP两段式代码-公用代码 -->
+	<script type="text/javascript" src="http://s.csbew.com/k.js"></script>
+	<!-- 92477：全部频道通投-文章页底部（新） 类型：固定广告位 尺寸：650x200-->
+	<ins id="ac_js86_92477" style="display: none;"></ins><script type="text/javascript">
+		_acK({aid:92477,format:0,mode:1,gid:1,destid:"sc0001",serverbaseurl:"afp.csbew.com/"});
+	</script><script type="text/javascript">
+ac_as_id = 92477;
+window.afp_cur_query="?pv=1&sp=92477,1,0,0,0,1,1,21&ec=UTF-8&re=1280,800&jsv=7&cb=2921973207&seq=1&fs=2";ac_format = 0;
+ac_mode = 1;
+window.__trans__92477 = true;
+ac_group_id = 1;
+ac_server_base_url = "afpeng.csbew.com/";
+</script>
+<script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/k.js"></script><script type="text/javascript" src="http://afpeng.csbew.com/ex?a=92477&amp;sp=1&amp;cb=_acM.r&amp;u=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;ds=1280x800&amp;_=1462263663389&amp;fs=3&amp;pvid=bf69933c8f25e482eaaa0fdda3feada2&amp;cg=ffac751766d63d5a572cd9b6e30a2bf5&amp;from_csbew=1" id="ac_js86_$8030840675"></script>
+
+	<div class="contentColumnLeft" style="margin:20px 0;">
+		<table width="100%" border="0" cellspacing="0" cellpadding="0">
+			<tbody><tr>
+				<td width="210" align="left">
+					<!-- 关注新浪微博
+					<iframe src="http://widget.weibo.com/relationship/followbutton.php?btn=red&style=3&uid=1752825395&width=100%&height=22&language=zh_cn" width="100%" height="22" frameborder="0" scrolling="no" marginheight="0"></iframe>-->
+				</td>
+				<td width="120" align="left"><!-- 关注QQ空间
+					<iframe src="http://open.qzone.qq.com/like?url=http%3A%2F%2Fuser.qzone.qq.com%2F2232833389&type=button_num&width=120&height=22&style=2" allowtransparency="true" scrolling="no" border="0" frameborder="0" style="width:120px;height:22px;border:none;overflow:hidden; text-align:right;vertical-align:middle;"></iframe>-->
+				</td>
+				<td align="right">
+					<div class="bshare-custom"><div class="bsPromo bsPromo2"></div>
+						<a title="分享到QQ空间" class="bshare-qzone" href="javascript:;"></a>
+						<a title="分享到新浪微博" class="bshare-sinaminiblog" href="javascript:;"></a>
+						<a title="分享到微信" class="bshare-weixin" href="javascript:;"></a>
+						<span class="BSHARE_COUNT bshare-share-count" style="float: none;">2</span>
+						<a title="更多平台" class="bshare-more bshare-more-icon" href="javascript:;"></a>
+					</div>
+					<script language="javascript" type="text/javascript" src="http://static.bshare.cn/b/buttonLite.js#style=-1&amp;uuid=fbe7b28e-050d-4ab3-9af4-0740ed16ea11&amp;pophcol=2&amp;lang=zh"></script>
+					<script language="javascript" type="text/javascript" src="http://static.bshare.cn/b/bshareC1.js"></script>
+				</td>
+			</tr>
+		</tbody></table>
+	</div>
+</div>
+	<div class="contentColumnLeft contentRelatedArea">
+      <!-- 相关报道 -->
+
+	  <!-- baidu  ����ϲ��-->
+<div class="contentColumnLeft contentRelatedArea noMobile">
+    <script>document.write(unescape('%3Cdiv id="hm_t_90610"%3E%3C/div%3E%3Cscript charset="utf-8" src="http://crs.baidu.com/t.js?siteId=0b2007edc647fec486f98a9528a1e9cd&planId=90610&async=0&referer=') + encodeURIComponent(document.referrer) + '&title=' + encodeURIComponent(document.title) + '&rnd=' + (+new Date) + unescape('"%3E%3C/script%3E'));</script><div id="hm_t_90610"><div style="display: block; margin: 0px; padding: 0px; float: none; clear: none; overflow: hidden; position: relative; border: 0px; max-width: none; max-height: none; border-radius: 0px; box-shadow: none; transition: none; text-align: left; box-sizing: content-box; width: 648px; height: 206px; background: none;"><div style="display: block; margin: 0px; padding: 0px; float: none; clear: none; overflow: hidden; position: relative; border: 0px; max-width: none; max-height: none; border-radius: 0px; box-shadow: none; transition: none; text-align: left; box-sizing: content-box; width: 100%; height: 100%; background: none;"></div></div></div><script charset="utf-8" src="http://crs.baidu.com/t.js?siteId=0b2007edc647fec486f98a9528a1e9cd&amp;planId=90610&amp;async=0&amp;referer=http%3A%2F%2Fnews.baidu.com%2Fns%3Fword%3D%25E7%2594%259F%25E6%2580%2581%25E8%25A1%25A5%25E5%2581%25BF%26pn%3D80%26cl%3D2%26ct%3D1%26tn%3Dnews%26rn%3D20%26ie%3Dutf-8%26bt%3D0%26et%3D0&amp;title=%E7%94%9F%E6%80%81%E8%A1%A5%E5%81%BF%E6%8E%A2%E7%B4%A2%E5%80%99%E9%B8%9F%E4%BF%9D%E6%8A%A4%E6%96%B0%E6%9C%BA%E5%88%B6%20%E8%AE%A9%E5%80%99%E9%B8%9F%E5%B9%B3%E5%AE%89%E8%BF%94%E4%B9%A1(1)_%E5%85%89%E6%98%8E%E6%97%A5%E6%8A%A5%20_%E5%85%89%E6%98%8E%E7%BD%91&amp;rnd=1462263663498"></script>
+<div class="clear"></div>
+</div>
+    </div><!--<div id="PrevNextContent">上一篇下一篇</div>-->
+
+    <a name="commentAnchor"></a>
+<!--新闻表情 begin-->
+<div id="motionsDiv"><a name="Mtns"></a><style>#mood *{margin:0;padding:0;text-align: center;font-size:12px;}#mood ul li a{color:#000; text-decoration:none;cursor:pointer;}#mood ul li a img{border:0;}#mood ul li,#mood ul li div.pillar{display:inline-block;display:-moz-inline-stack;zoom:1;*display:inline;}#mood ul li{vertical-align: bottom;display:inline-block;display:inline9;}#mood ul li{width:70px; padding-bottom:10px}#mood ul li div.pillar{width:70px; display:inline-block !important; height:0px; max-height:40px; line-height:0px; background:url(http://imghealth.gmw.cn/motions/mood.gif) repeat-y center; margin-bottom:5px;}#mood_title{background-color:#f0f0f0;height:26px;line-height:26px;}#mood_title div{margin:0 2em;font-size:14px;font-weight:bold;}#mood_tl{float:left;}#mood_tr{float:right;}.list_more{border-top:1px solid #fff;clear:both;overflow-:hidden;padding-bottom:8px; margin:0 auto; width:94%;}.list_more a{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;display:block;text-align:center;border:1px solid #eae9e9;height:30px;line-height:30px;font-size:15px;background-color:#e6e6e6;background-image:-webkit-gradient(linear,left top,left bottom,from(#f3f3f3),to(#e6e6e6));background-image:-webkit-linear-gradient(top,#f3f3f3,#e6e6e6);background-image:-moz-linear-gradient(top,#f3f3f3,#e6e6e6);background-image:-ms-linear-gradient(top,#f3f3f3,#e6e6e6);background-image:-o-linear-gradient(top,#f3f3f3,#e6e6e6);background-image:linear-gradient(top,#f3f3f3,#e6e6e6);filter:progid:DXImageTransform.Microsoft.gradient(startColorStr="#f3f3f3",EndColorStr="#e6e6e6"); color:#9b9b9b; text-shadow:1px 1px 1px #fff; font-weight:bold; -moz-box-shadow:1px 1px 1px #999; -webkit-box-shadow:1px 1px 1px #999; box-shadow:1px 1px 1px #999;}.list_more a:hover{ color:#0095EF; text-decoration:none;}</style><div id="mood"><div id="mood_title"><div id="mood_tl">您此时的心情</div><div id="mood_tr">新闻表情排行 <a href="http://www.gmw.cn/motionsdaytop.htm" target="_blank">日</a>/<a href="http://www.gmw.cn/motionsweektop.htm" target="_blank">周</a></div></div><div style="clear:both;"></div><ul><li><p id="hits_1">0</p><div id="zhu_1" style="height:0px; line-height:0px;" class="pillar">&nbsp;</div><a onclick="getMotions(1);"><img src="http://imgp.gmw.cn/motionsimg/0/m1.gif"><p>开心</p></a></li><li><p id="hits_2">0</p><div id="zhu_2" style="height:0px; line-height:0px;" class="pillar">&nbsp;</div><a onclick="getMotions(2);"><img src="http://imgp.gmw.cn/motionsimg/0/m2.gif"><p>板砖</p></a></li><li><p id="hits_3">0</p><div id="zhu_3" style="height:0px; line-height:0px;" class="pillar">&nbsp;</div><a onclick="getMotions(3);"><img src="http://imgp.gmw.cn/motionsimg/0/m3.gif"><p>感动</p></a></li><li><p id="hits_4">3</p><div id="zhu_4" style="height:40px; line-height:40px;" class="pillar">&nbsp;</div><a onclick="getMotions(4);"><img src="http://imgp.gmw.cn/motionsimg/0/m4.gif"><p>撒花</p></a></li><li><p id="hits_5">0</p><div id="zhu_5" style="height:0px; line-height:0px;" class="pillar">&nbsp;</div><a onclick="getMotions(5);"><img src="http://imgp.gmw.cn/motionsimg/0/m5.gif"><p>怀疑</p></a></li><li><p id="hits_6">1</p><div id="zhu_6" style="height:14px; line-height:14px;" class="pillar">&nbsp;</div><a onclick="getMotions(6);"><img src="http://imgp.gmw.cn/motionsimg/0/m6.gif"><p>难过</p></a></li><li><p id="hits_7">0</p><div id="zhu_7" style="height:0px; line-height:0px;" class="pillar">&nbsp;</div><a onclick="getMotions(7);"><img src="http://imgp.gmw.cn/motionsimg/0/m7.gif"><p>无聊</p></a></li><li><p id="hits_8">0</p><div id="zhu_8" style="height:0px; line-height:0px;" class="pillar">&nbsp;</div><a onclick="getMotions(8);"><img src="http://imgp.gmw.cn/motionsimg/0/m8.gif"><p>震惊</p></a></li></ul></div></div>
+<script>
+    var M_contentId = $("META[name=contentid]").attr("content");
+    (function() {
+        var mojs1 = document.createElement('script');
+        mojs1.type = 'text/javascript';
+        mojs1.async = true;
+        mojs1.src = 'http://motions.gmw.cn/show/'+M_contentId;
+        var smo1 = document.getElementsByTagName('script')[0];
+        smo1.parentNode.insertBefore(mojs1, smo1);
+    })();
+</script>
+<!--新闻表情 end-->
+<!-- 20151113 豆子游戏 begin -->
+<div class="noMobile" style="margin:10px 0;">
+<!-- 112417：通发-内-底部表情下-豆子 类型：固定广告位 尺寸：650x90-->
+<span style="overflow: visible; position: relative; display: block; width: 650px; height: 90px; border: 0px; text-align: left; background: none;"><span style="overflow: hidden; position: absolute; display: block; width: 650px; height: 90px; border: 0px; text-align: left; background: none;"><span style="overflow: hidden; position: absolute; display: block; width: 650px; height: 90px; border: 0px; text-align: left; background: none;"><a href="http://afptrack.csbew.com/clk?bid=0a67349c000057285f70104f04ef0807&amp;pid=mm_113716014_12970037_52772596&amp;cid=2485&amp;mid=3274&amp;oid=376&amp;productType=1&amp;target=http%3A%2F%2Fqp.gmw.cn%2Fgmw%2Findex_contentcenter.do" target="_blank" style="position: absolute; display: block; top: 0px; left: 0px; margin: 0px; padding: 0px; width: 650px; height: 90px; text-decoration: none; opacity: 0; z-index: 1; cursor: pointer; background: rgb(255, 255, 255);"></a><img id="ac_cs_112417_1" border="0" src="http://afp.alicdn.com/afp-creative/creative/u113716014/eff5dfa1162572534f37bf33ae5ac665.jpg" style="width: 650px; height: 90px;"></span></span></span><ins id="ac_js86_112417" style="display: none;"></ins><script type="text/javascript">
+_acK({aid:112417,format:0,mode:1,gid:1,serverbaseurl:"afp.csbew.com/"});
+</script><script type="text/javascript">
+ac_as_id = 112417;
+window.afp_cur_query="?pv=1&sp=112417,1,0,0,0,1,1,21&ec=UTF-8&re=1280,800&jsv=7&cb=1848368335&seq=2&fs=3";ac_format = 0;
+ac_mode = 1;
+window.__trans__112417 = true;
+ac_group_id = 1;
+ac_server_base_url = "afpeng.csbew.com/";
+</script>
+<script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/k.js"></script><script></script><script type="text/javascript" src="http://afpeng.csbew.com/ex?a=112417&amp;sp=1&amp;cb=_acM.r&amp;u=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;ds=1280x800&amp;_=1462263664413&amp;fs=3&amp;pvid=a73d52f73c2a5360f3ffd5d091c82d1a&amp;cg=ae6e010c57a535ccaaa9d56cd0d76a4f&amp;from_csbew=1" id="ac_js86_$617211619"></script>
+
+</div>
+<!-- 20151113 豆子游戏 end -->
+<!--畅言高速版 begin-->
+<div class="contentColumnLeft"><div id="SOHUCS" sid="19695837"><div id="SOHU_MAIN"><div class="module-cmt-header">
+    <div class="clear-g section-title-w">
+        <div class="title-join-w">
+            <div node-type="join-wrap" class="join-wrap-w">
+                <a href="javascript:;">
+                    <strong class="wrap-name-w">评论</strong><span class="wrap-join-w">(<span node-type="participation-wrapper"><em node-type="participation-number" class="join-strong-gw">0</em>人参与<i class="gap-b">，</i></span><em node-type="comment-number" class="join-strong-gw">0</em>条评论)</span>
+                </a>
+            </div>
+        </div>
+        <div class="title-user-w">
+            <div node-type="user" class="clear-g user-wrap-w">
+                <span node-type="user-name" class="wrap-name-w"></span><span class="wrap-icon-w"></span>
+                <div class="wrap-menu-w">
+                    <div class="menu-box-w">
+                        <a href="javascript:void(0);" node-type="my-changyan"><i class="gap-w">我的畅言</i></a>
+                        <a node-type="logout" href="javascript:;">
+                            <i class="gap-w">退出</i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="section-cbox-w">
+        <div class="cbox-block-w clear-g">
+            <div class="block-head-w" node-type="avatar">
+                <div class="head-img-w">
+                    <a href="javascript:void(0);">
+                        <img node-type="user-head" src="http://changyan.sohu.com/upload/asset/scs/images/pic/pic42_null.gif" width="42" height="42" alt="">
+                    </a>
+                </div>
+            </div>
+            <div node-type="login-select" class="block-post-w">
+                <!-- 放置cbox初始状态 -->
+                <div class="module-cmt-box">
+    <!-- 展开状态 -->
+    <div class="post-wrap-w">
+        <div class="wrap-area-w">
+            <div class="area-textarea-w">
+                <textarea node-type="textarea" name="" class="textarea-fw textarea-bf">有事没事说两句...</textarea>
+            </div>
+        </div>
+        <div class="clear-g wrap-action-w">
+            <div class="action-function-w">
+                <ul class="clear-g">
+                    <li node-type="function-face" class="function-face-w">
+                        <a class="effect-w" href="javascript:void(0)">
+                            <i class="face-b"></i>
+                        </a>
+                    </li>
+                    <li node-type="function-uploading" class="function-uploading-w" style="display: none; position: relative;">
+                <span style="position: absolute; top: 0; left: 0; height: 39px; width: 40px; overflow: hidden; opacity: 0.1; filter:alpha(opacity=10);">
+                    <object id="SWFUpload_0" type="application/x-shockwave-flash" data="http://changyan.itc.cn/mdevp/extensions/cui/002/swfupload.v2.2.0/swfupload.swf" width="40" height="39" class="swfupload"><param name="wmode" value="transparent"><param name="movie" value="http://changyan.itc.cn/mdevp/extensions/cui/002/swfupload.v2.2.0/swfupload.swf"><param name="quality" value="high"><param name="menu" value="false"><param name="allowScriptAccess" value="always"><param name="flashvars" value="movieName=SWFUpload_0&amp;uploadURL=http%3A%2F%2Fchangyan.sohu.com%2Fapi%2F2%2Fcomment%2Fattachment&amp;useQueryString=false&amp;requeueOnError=false&amp;httpSuccess=&amp;assumeSuccessTimeout=0&amp;params=&amp;filePostName=file&amp;fileTypes=*.jpg%3B*.png%3B*.gif%3B*.jpeg&amp;fileTypesDescription=All%20Files&amp;fileSizeLimit=2%20MB&amp;fileUploadLimit=0&amp;fileQueueLimit=0&amp;debugEnabled=false&amp;buttonImageURL=http%3A%2F%2Fchangyan.itc.cn%2Fmdevp%2Fextensions%2Fcui%2F002%2Fswfupload.v2.2.0%2Fswfupload.js%3Fbutton_image_url&amp;buttonWidth=40&amp;buttonHeight=39&amp;buttonText=&amp;buttonTextTopPadding=0&amp;buttonTextLeftPadding=0&amp;buttonTextStyle=color%3A%20%23000000%3B%20font-size%3A%2016pt%3B&amp;buttonAction=-110&amp;buttonDisabled=false&amp;buttonCursor=-2"></object>
+                </span>
+
+                        <a class="effect-w" href="javascript:void(0)" title="上传图片">
+                            <i class="uploading-b"></i>
+                        </a>
+                        <div class="uploading-file-w">
+                            <a href="javascript:void(0);" name="" class="file-fw"></a>
+                        </div>
+                    </li>
+                </ul>
+                <!-- 表情 -->
+                <div node-type="face-box" class="face-wrapper-dw">
+                    <div node-type="face-cont" class="wrapper-cont-dw">
+                        <ul class="clear-g">
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/流汗"><img title="流汗" alt="流汗" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_01.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/钱"><img title="钱" alt="钱" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_02.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/发怒"><img title="发怒" alt="发怒" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_03.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/浮云"><img title="浮云" alt="浮云" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_04.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/给力"><img title="给力" alt="给力" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_05.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/大哭"><img title="大哭" alt="大哭" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_06.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/憨笑"><img title="憨笑" alt="憨笑" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_07.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/色"><img title="色" alt="色" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_08.gif"></a>
+                            </li>
+                        </ul>
+                        <ul class="clear-g">
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/奋斗"><img title="奋斗" alt="奋斗" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_09.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/鼓掌"><img title="鼓掌" alt="鼓掌" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_10.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/鄙视"><img title="鄙视" alt="鄙视" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_11.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/可爱"><img title="可爱" alt="可爱" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_12.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/闭嘴"><img title="闭嘴" alt="闭嘴" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_13.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/疑问"><img title="疑问" alt="疑问" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_14.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/抓狂"><img title="抓狂" alt="抓狂" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_15.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/惊讶"><img title="惊讶" alt="惊讶" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_16.gif"></a>
+                            </li>
+                        </ul>
+                        <ul class="clear-g">
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/可怜"><img title="可怜" alt="可怜" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_17.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/弱"><img title="弱" alt="弱" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_18.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/强"><img title="强" alt="强" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_19.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/握手"><img title="握手" alt="握手" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_20.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/拳头"><img title="拳头" alt="拳头" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_21.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/酒"><img title="酒" alt="酒" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_22.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/玫瑰"><img title="玫瑰" alt="玫瑰" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_23.gif"></a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" data_path="base" data-ubb="/打酱油"><img title="打酱油" alt="打酱油" src="http://changyan.itc.cn/mdevp/extensions/new-face/001/new_face_24.gif"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!--  上传图片 --><!--  uploading-efw -->
+                <div node-type="uploading-wrapper" class="uploading-wrapper-dw uploading-efw ">
+                    <div node-type="image-uploading" class="wrapper-loading-dw">
+                        <div class="loading-word-dw"><span class="word-icon-dw"></span>图片正在上传，请稍后...</div>
+                        <div class="loading-btn-dw">
+                            <a href="javascript:void(0)">取消上传</a>
+                        </div>
+                    </div>
+                    <div node-type="image-uploaded" class="wrapper-image-dw">
+                        <div class="image-close-dw">
+                            <a href="javascript:void(0)"></a>
+                        </div>
+                        <div class="image-pic-dw">
+                            <img node-type="image-pic" alt="" src="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="clear-g action-issue-w">
+                <div class="issue-btn-w">
+                    <a href="javascript:void(0)">
+                        <button node-type="issue" class="btn-fw">发布</button>
+                    </a>
+                </div>
+                <div class="issue-icon-w" node-type="share-icons">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="cbox-prompt-w" node-type="error-tips">
+        <span node-type="prompt-empty" class="prompt-empty-w">未输入评论内容</span>
+    </div>
+</div>
+                <!-- 放置cbox发布状态 -->
+                <!-- 用户登录 -->
+
+                <div node-type="login-btn" class="post-login-w clear-g">
+                    <ul class="clear-g">
+
+                            <li>
+                                <div label="" class="login-wrap-w login-wrap-other-w">
+                                    <a class="global-clear-spacing" href="javascript:;">
+                                        <span class="wrap-icon-w icon30-other-w" style="background: url(http://0d077ef9e74d8.cdn.sohucs.com/97075b09bc8da2c6efe5649a72a8c43f_logo_1461659035475_jpg)"></span>
+                                        <span class="wrap-name-w">登录</span>
+                                    </a>
+                                </div>
+                            </li>
+
+
+
+
+
+                                <li>
+                                    <div label="weibo" class="login-wrap-w">
+                                        <a class="global-clear-spacing" href="javascript:;">
+                                            <span class="wrap-icon-w icon30-sina-w"></span>
+                                            <span class="wrap-name-w">微博登录</span>
+                                        </a>
+                                    </div>
+                                </li>
+
+
+
+
+
+
+
+                                <li>
+                                    <div label="qq" class="login-wrap-w">
+                                        <a class="global-clear-spacing" href="javascript:;">
+                                            <span class="wrap-icon-w icon30-qq-w"></span>
+                                            <span class="wrap-name-w">QQ登录</span>
+                                        </a>
+                                    </div>
+                                </li>
+
+
+
+                                <li>
+                                    <div label="phone" class="login-wrap-w">
+                                        <a class="global-clear-spacing" href="javascript:;">
+                                            <span class="wrap-icon-w icon30-phone-w"></span>
+                                            <span class="wrap-name-w">手机登录</span>
+                                        </a>
+                                    </div>
+                                </li>
+
+
+
+
+
+                    </ul>
+                </div>
+                                <!-- 提示条 -->
+                <!-- 零评论提示条 -->
+                <div class="list-comment-empty-w">
+                    <div node-type="empty-prompt" class="empty-prompt-w">
+                        <span class="prompt-null-w">还没有评论，快来抢沙发吧！</span>
+                    </div>
+                </div>
+                <!--关闭评论-->
+                <div class="list-close-comment-w">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div><!-- 评论列表  S -->
+<div class="module-cmt-list section-list-w">
+        <!-- 最新评论 -->
+    <div class="list-block-gw list-newest-w">
+        <div node-type="cmt-list-title" class="block-title-gw" style="display: none;">
+            <ul class="clear-g">
+                <li><strong class="title-name-gw title-name-bg">最新评论</strong></li>
+            </ul>
+        </div>
+        <div node-type="cmt-list"></div>
+    </div>
+</div>
+<!-- 评论列表  E --><div class="module-cmt-footer">
+    <!-- 评论关闭 -->
+    <div class="list-comment-close-w">
+        <div class="close-wrap-w close-wrap-b">该评论已关闭!</div>
+    </div>
+    <!-- 翻页 -->
+    <div class="section-page-w" style="display: none;">
+        <span node-type="page-wrapper" class="page-wrap-gw page-wrap-w">
+
+</span>
+    </div><div class="more-comment">
+
+    <a href="http://changyan.sohu.com/admin/jump?topic_id=1167097790&amp;client_id=cyr45LmB4&amp;default_url=http://bbs.gmw.cn/&amp;bbs_url=http://bbs.gmw.cn/thread-{tid}-1-1.html" target="_blank">
+        已有<em class="wrap-strong-w wrap-strong-b">0</em>人参与，点击查看更多精彩评论&gt;&gt;
+    </a>
+    </div>
+    <!-- 某站正在使用畅言 -->
+    <div class="section-service-w">
+        <div class="service-wrap-w">
+            <a href="http://changyan.kuaizhan.com/" target="_blank">
+
+            光明网正在使用畅言
+                                                            </a>
+        </div>
+    </div>
+</div><div class="module-cmt-float-bar">
+    <div class="module-cmt-float-bar-body" style="bottom: 0;">
+        <div class="close-w"><a node-type="close" href="javascript:void(0)">关闭</a></div>
+        <div class="wrap-cont-w">
+            <!-- 评论 Begin -->
+            <div class="cont-minwidth-w">
+                <div class="cont-comment-w">
+                    <span class="comment-text-w" style="display:  block ">立刻说两句吧！</span>
+                    <a class="comment-link-w" href="javascript:void(0)" style="display:  none ">查看<i>0</i>条评论</a>
+                </div>
+                <div class="cont-form-w">
+                    <div node-type="post-form" class="form-text-w">
+                        <span class="btn-load-bf"></span>
+                        <a class="button-w" href="javascript:void(0)">按钮</a>
+                        <input type="text" value="来说两句吧..." class="text-w" data-default="来说两句吧...">
+                    </div>
+                </div>
+            </div>
+            <!-- 评论 End -->
+            <!-- 登录 Begin -->
+            <div class="cont-login-w">
+                <div class="fb-login-wrap-w" style=" display: none ">
+                    <span node-type="fb-user-name" class="user-info" style="position: relative;">
+                        <img src="">
+                        <span>nickname</span>
+                        <a class="floatbar-quit" href="javascript:void(0)">[退出]</a>
+                    <div class="module-cmt-notice-bubble" style="display: none;">0</div></span>
+                </div>
+                <div class="fb-logout-wrap-w" style=" ">
+                    <ul node-type="login-list" class="post-login-w">
+                        <li class="first-w"><span>登录：</span></li>
+
+                        <li>
+                            <a node-type="login-way" data-key="sina" data-platform="2" class="icon-sina-w" href="javascript:void(0)"></a>
+                        </li>
+
+                        <li>
+                            <a node-type="login-way" data-key="qq" data-platform="3" class="icon-qq-w" href="javascript:void(0)"></a>
+                        </li>
+                                            </ul>
+                </div>
+                <span node-type="share-btn" class="new-share">
+    <!-- 分享浮窗 Begin -->
+    <div node-type="share-list" class="func-select share-select" style="display: none;">
+        <ul class="clear">
+            <li><a data-key="renren" class="icon-renren-w" href="javascript:;" title="人人网"></a></li>
+            <li><a data-key="qzone" class="icon-qzone-w" href="javascript:;" title="QQ空间"></a></li>
+            <li><a data-key="weixin" class="icon-weixin-w" href="javascript:;" title="腾讯微信"></a></li>
+            <li><a data-key="sina" class="icon-sina-w" href="javascript:;" title="新浪"></a></li>
+        </ul>
+        <div class="arrow"></div>
+    </div>
+    <!-- 分享浮窗 End   -->
+    <!-- 分享浮窗-二维码 Begin -->
+    <div node-type="weixin-code" class="qrcode" style="display: none;">
+        <div class="qrcode-wrap">
+            <!--<img src="about:blank" width="90" height="90" alt=""/>-->
+            <div class="qrcode-img"></div>
+            <div class="qrcode-close"><a href="javascript:;"></a></div>
+        </div>
+        <p class="qrcode-text">用微信扫描二维码即可分享此网页至好友和朋友圈</p>
+    </div>
+    <!-- 分享浮窗-二维码 End   -->
+    <i class="ico"></i>分享
+</span>
+            </div>
+            <!-- 登录 End -->
+        </div>
+    </div>
+</div><div class="module-cmt-notice">
+    <ul class="nt-list">
+
+        <li node-type="notice-message" data-alias="message" data-type="message" data-static="static" class="nt-item" style=" display: none ">
+            <a node-type="notice-content" class="nt-text" href="javascript:void(0);">你收到<i>0</i>条新通知</a>
+            <a class="nt-close" href="javascript:void(0);"></a>
+        </li>
+
+        <li node-type="notice-support" data-alias="support" data-type="support" data-static="static" class="nt-item" style=" display: none ">
+            <a node-type="notice-content" class="nt-text" href="javascript:void(0);">你有<i>0</i>条评论收到赞同</a>
+            <a class="nt-close" href="javascript:void(0);"></a>
+        </li>
+
+        <li node-type="notice-reply" data-alias="reply" data-type="reply" data-static="static" class="nt-item" style=" display: none ">
+            <a node-type="notice-content" class="nt-text" href="javascript:void(0);">你有<i>0</i>条新回复</a>
+            <a class="nt-close" href="javascript:void(0);"></a>
+        </li>
+
+        <li node-type="notice-task" data-alias="task" data-type="task" data-static="static" class="nt-item" style=" display: none ">
+            <a node-type="notice-content" class="nt-text" href="javascript:void(0);">你有<i>0</i>个任务已完成</a>
+            <a class="nt-close" href="javascript:void(0);"></a>
+        </li>
+            </ul>
+</div></div></div></div>
+<style>#SOHUCS #SOHU_MAIN #SOHU-comment-main .section-cbox-w .post-login-w ul li .login-wrap-other-w a,.user-login-wrapper-dw .cont-login-dw ul li .login-wrap-other-w a{padding:0;width:117px;height:40px;background-image:url("http://img.gmw.cn/pic/img_117x40.jpg");background-repeat:no-repeat;background-position:0 0}#SOHUCS #SOHU_MAIN #SOHU-comment-main .section-cbox-w .post-login-w ul li .login-wrap-other-w a:hover,.user-login-wrapper-dw .cont-login-dw ul li .login-wrap-other-w a:hover{background-image:url("http://img.gmw.cn/pic/img_117x40_hover.jpg");background-repeat:no-repeat;background-position:0 0}#SOHUCS #SOHU_MAIN #SOHU-comment-main .section-cbox-w .post-login-w ul li .login-wrap-other-w span.wrap-icon-w,.user-login-wrapper-dw .cont-login-dw ul li .login-wrap-other-w span.wrap-icon-w{display:none}#SOHUCS #SOHU_MAIN #SOHU-comment-main .section-cbox-w .post-login-w ul li .login-wrap-other-w span.wrap-name-w,.user-login-wrapper-dw .cont-login-dw ul li .login-wrap-other-w span.wrap-name-w{display:none}#changyan_floatbar_wrapper #bottombar-wrap-w .wrap-cont-w .cont-login-w .logout-wrap-w ul li.login-wrap-w,#changyan_floatbar_wrapper #bottombar-wrap-w .wrap-cont-w .cont-login-w .logout-wrap-w ul li img{width:30px!important}</style>
+<script>
+    var content_source_id = M_contentId || $("META[name='contentid']").attr("content");
+    $("#SOHUCS").attr("sid", content_source_id);
+    (function(){
+        document.domain = 'gmw.cn';
+        var appid = 'cyr45LmB4',
+        conf = 'prod_97075b09bc8da2c6efe5649a72a8c43f';
+        var doc = document,
+        s = doc.createElement('script'),
+        h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+        s.type = 'text/javascript';
+        s.charset = 'utf-8';
+        s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+        h.insertBefore(s,h.firstChild);
+        window.SCS_NO_IFRAME = true;
+    })();
+    // 畅言登录
+    function cy_login(){
+        var cookie_name_cy=decodeURIComponent(getCookie('Example_auth_username'));
+        if(cookie_name_cy.length>0 && cookie_name_cy != null){
+            if(document.getElementById('loginbar_new')!=null){
+                var if_loginbar_new = 1;
+            }
+            if(if_loginbar_new == 1){
+                document.getElementById('loginbar_new').innerHTML="<div id='login'>"+cookie_name_cy+"&nbsp;&nbsp;您好!&nbsp;&nbsp;<a href='http://home.gmw.cn' style='color:#c00;' target='_blank'>用户统一登录平台</a>&nbsp;&nbsp;<a href='#' onclick=\"login_in();\" target='_self'>安全退出</a></div>";
+            }
+        }
+    }
+</script>
+<!--畅言高速版 end-->
+    <div class="noMobile"><meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<style type="text/css">
+.contentPicTxt_left01{ padding:5px 0;}
+.contentPicTxt_left01 img{ margin:5px 5px 0 0;}
+/* 左侧排行*/
+.rankLeft .contentTxtArea{ padding-top:20px;}
+.rankLeft p{ display:block;margin:0; padding:0;clear:both;}
+.rankLeft p span{ padding:3px;height:28px; line-height:28px;}
+.rankLeft p span.r1,.rankLeft p span.r2{margin:0 5px 0 0; text-align:center; font-size:12px; background:#ccc;}
+.rankLeft p span.r1{ background:#c00; color:#fff;}
+</style>
+<div id="leftad3" class="contentadBox_left"><div id="ac_wrap_112105" style="width:650px"><iframe src="http://entry.baidu.com/rp/home?psid=1000112&amp;pswidth=650&amp;psheight=120&amp;ifr=infr%3A1_cross%3A0_drs%3A1_pcs%3A1280x629_pss%3A1280x1691_cfv%3A0_cpl%3A5_chi%3A1_cce%3A1_cec%3AUTF8_tlm%3A1462263664_ecd%3A1_adw%3Aundefinedxundefined&amp;di=1000112&amp;rsi0=650&amp;rsi1=120&amp;title=%E7%94%9F%E6%80%81%E8%A1%A5%E5%81%BF%E6%8E%A2%E7%B4%A2%E5%80%99%E9%B8%9F%E4%BF%9D%E6%8A%A4%E6%96%B0%E6%9C%BA%E5%88%B6%20%E8%AE%A9%E5%80%99%E9%B8%9F%E5%B9%B3%E5%AE%89%E8%BF%94%E4%B9%A1(1)_%E5%85%89%E6%98%8E%E6%97%A5%E6%8A%A5%20_%E5%85%89%E6%98%8E%E7%BD%91&amp;ref=http%3A%2F%2Fnews.baidu.com%2Fns%3Fword%3D%25E7%2594%259F%25E6%2580%2581%25E8%25A1%25A5%25E5%2581%25BF%26pn%3D80%26cl%3D2%26ct%3D1%26tn%3Dnews%26rn%3D20%26ie%3Dutf-8%26bt%3D0%26et%3D0&amp;ltu=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;t=1462263664827" width="650" height="120" scrolling="no" frameborder="0" style="width: 650px; height: 120px; background-color: transparent;"></iframe><script type="text/javascript" id="BDEMBED_PSID1000112">
+    /*创建于2015-11-10*/
+    var cpro_psid = "1000112";
+    var cpro_pswidth = 650;
+    var cpro_psheight = 120;
+</script>
+<script type="text/javascript"></script><script type="text/javascript"></script><script type="text/javascript"></script><script type="text/javascript"></script><script type="text/javascript"></script><script type="text/javascript"></script></div></div>
+
+<!-- 112105：通发-内-底部导量 类型：固定广告位 尺寸：650x90-->
+<ins id="ac_js86_112105" style="display: none;"></ins><script type="text/javascript">
+_acK({aid:112105,format:0,mode:1,gid:1,destid:"leftad3",serverbaseurl:"afp.csbew.com/"});
+</script><script type="text/javascript">
+ac_as_id = 112105;
+window.afp_cur_query="?pv=1&sp=112105,1,0,0,0,1,1,21&ec=UTF-8&re=1280,800&jsv=7&cb=1206543312&seq=3&fs=3";ac_format = 0;
+ac_mode = 1;
+window.__trans__112105 = true;
+ac_group_id = 1;
+ac_server_base_url = "afpeng.csbew.com/";
+</script>
+<script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/k.js"></script><script></script><script type="text/javascript" src="http://afpeng.csbew.com/ex?a=112105&amp;sp=1&amp;cb=_acM.r&amp;u=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;ds=1280x800&amp;_=1462263664653&amp;fs=3&amp;pvid=b13c2ef51e715a83bae5d46e675c6961&amp;cg=ee84356f0e73cdd4963c7262d3570c76&amp;from_csbew=1" id="ac_js86_$1439246902"></script>
+
+
+
+
+
+<!--24小时图片排行-->
+<div class="contentColumnLeft">
+			<div class="contentTitBarLeft">一周图片排行榜</div>
+			<div class="contentBoxLeft">
+			<div class="contentPicTxt_left01 rankLeft">
+				<div class="contentPicArea black12" style="width:180px; padding-left:20px; float:left; text-align:left;">
+				  <a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19921965.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160501/c03fd5535e16188fd7863c.jpg" border="0" width="140" height="100"></a><p><span class="r1">01</span><span><a href="http://photo.gmw.cn/2016-05/01/content_19921965.htm" target="_blank">这确定是一只狗？</a></span></p><a atremote="" href="http://skype.gmw.cn/activity/fools-day.html?utm_campaign=gmw&amp;utm_source=page&amp;utm_medium=imageph" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160331/c03fd5535e161866dedd31.jpg" border="0" width="140" height="100"></a><p><span class="r1">02</span><span><a href="http://skype.gmw.cn/activity/fools-day.html?utm_campaign=gmw&amp;utm_source=page&amp;utm_medium=imageph" target="_blank">愚人节话费降降降</a></span></p>
+				</div>
+				<div class="contentTxtArea black14" style="float:left;">
+					<p><span class="r2">03</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19920228.htm" target="_blank">成都女留学生疑遭澳洲姨父杀害 身中20刀</a></span></p>
+					<p><span class="r2">04</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19919798.htm" target="_blank">男子反串香妃起舞引蝶满场飞 满地蝴蝶惹人惊奇</a></span></p>
+					<p><span class="r2">05</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19922713.htm" target="_blank">美女电梯间5秒KO色狼 她竟是拳王女友</a></span></p>
+					<p><span class="r2">06</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19919635.htm" target="_blank">大学毕业生留念会堪比明星秀 走红毯还玩航拍</a></span></p>
+					<p><span class="r2">07</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19919664.htm" target="_blank">西湖惊艳亮相首支女子巡逻队 游客：太拉风了</a></span></p>
+					<p><span class="r2">08</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19919681.htm" target="_blank">有鬼？影像捕捉到一战时期老旧农舍内疑似幽灵</a></span></p>
+					<p><span class="r2">09</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19921640.htm" target="_blank">肯尼亚焚烧105吨象牙和1.3吨犀牛角</a></span></p>
+					<p style="border:none;"><span class="r2">10</span>
+					  <span class="rankRightTit"><a atremote="" href="http://photo.gmw.cn/2016-05/01/content_19919654.htm" target="_blank">英国一村庄被孔雀占领了6年</a></span></p>
+				</div>
+				<div class="clear"></div>
+			</div>
+  </div>
+</div>
+<div id="leftad4" class="contentadBox_left"></div>
+<div id="leftad5" class="contentadBox_left"></div>
+</div>
+    <div class="noMobile"><meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<div id="leftad6" class="noMobile contentadBox_left"></div>
+<div id="leftad8" class="noMobile contentadBox_left"></div>
+</div>
+
+</div>
+  <!-- tplID:8375 时政无广告右侧-->
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<style type="text/css">
+.contentPicTxt_right{padding:5px;}
+.contentPicTxt_right img{ margin:0 5px 0 0; float:left;}
+/* 右侧侧Tab01  3个栏目*/
+ul#contentTabs_right01{width:308px;}
+ul#contentTabs_right01 li{ float:left;}
+ul#contentTabs_right01 li a{display:block;width:102px;border-bottom:1px solid #ccc;border-right:1px solid #ccc;height:30px; line-height:30px; text-align:center;text-decoration:none;outline:none;background:#f9f9f9;}
+ul#contentTabs_right01 li a.current{background:#fff; border-bottom:none; font-weight:bold;}
+ul#contentTabs_right01 li a.current:hover{text-decoration:none;cursor: default;}
+ul#contentOutput_right01,ul#contentOutput_right01 li{width:308px; height:260px;overflow:hidden;}
+/* 右侧侧Tab02 2个栏目*/
+ul#contentTabs_right02{width:308px;}
+ul#contentTabs_right02 li{ float:left;}
+ul#contentTabs_right02 li a,ul#contentTabs_right01 li a{display:block;width:153px;border-bottom:1px solid #ccc;border-right:1px solid #ccc;height:30px; line-height:30px; text-align:center;text-decoration:none;outline:none;background:#f9f9f9;}
+ul#contentTabs_right02 li a.current{background:#fff; border-bottom:none; font-weight:bold;}
+ul#contentTabs_right02 li a.current:hover{text-decoration:none;cursor: default;}
+ul#contentOutput_right02,ul#contentOutput_right02 li{width:308px; height:260px;overflow:hidden;}
+/* 右侧排行*/
+.rankRight p{ display:block; height:24px; margin:0; padding:0; border-bottom:1px dotted #cecece; clear:both;}
+.rankRight p span{ display:block; float:left; height:24px; line-height:24px;}
+.rankRight p span.rankRightTit{ width:220px; overflow:hidden;}
+.rankRight p span.clickRate{ width:55px;color:#666;}
+.rankRight p span.r1,.rankRight p span.r2{ width:18px; height:18px; line-height:18px;margin:3px 5px 0 0; text-align:center; font-size:12px;}
+.rankRight p span.r1{ color:#c00;}
+.contentRight{background:none;}
+#searchText{width:140px; height:20px; line-height:20px; border:1px #ccc solid;}
+#selectId{width:96px; height:22px; border:1px #ccc solid;}
+#submitS{background:#123377; border:1px #ccc solid; width:50px; height:22px; line-height:22px; color:#fff; font-size:12px; cursor:pointer;}
+</style>
+
+<div class="contentRight">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style>
+#searchBar{padding-bottom:2px;}
+#searchText{width:140px; height:20px; line-height:20px; border:1px #ccc solid;}
+#selectId{width:96px; height:22px; border:1px #ccc solid;}
+#submitS{background:#123377; border:1px #ccc solid; width:50px; height:24px; line-height:20px; color:#fff; font-size:12px; cursor:pointer;}
+</style>
+<div id="searchBar">
+    <form id="form2" name="form2" method="post" target="_blank" onsubmit="change()">
+        <table width="370" border="0" cellpadding="0" cellspacing="0">
+            <tbody><tr>
+            	<td width="153" align="left"> <input id="searchText" name="searchText" type="text"></td>
+				<td width="102" align="left">
+					<select name="selectId" id="selectId">
+						<option value="0">站内搜索</option>
+						<option value="1">光明网</option>
+						<option value="2">光明报系</option>
+					</select>
+				</td>
+            	<td width="55" align="right"><input id="submitS" type="submit" value="搜索"></td>
+                <td align="right"><a href="http://skype.gmw.cn/"><img src="http://img.gmw.cn/pic/skypelogo.jpg" width="45" height="20" border="0"></a></td>
+            </tr>
+        </tbody></table>
+    </form>
+</div>
+
+		<!--值班总编推荐-->
+		<div class="contentColumnRight">
+			<div class="contentBoxRight">
+			<p><span class="navy12">[值班总编推荐]</span>
+			  <span class="black12"><a atremote="" href="http://guancha.gmw.cn/2016-05/03/content_19937546.htm" target="_blank">公权力在莆田系深水中摸不着石头？</a><br></span>
+			</p>
+			<p><span class="navy12">[值班总编推荐]</span>
+			  <span class="black12"><a atremote="" href="http://news.gmw.cn/2016-05/03/content_19929930.htm" target="_blank">我们该怎样办大学</a><br></span>
+			</p>
+			<p><span class="navy12">[值班总编推荐]</span>
+			  <span class="black12"><a atremote="" href="http://news.gmw.cn/2016-04/29/content_19899753.htm" target="_blank">中国企业在德国汉诺威把握机遇</a><br></span>
+			</p>
+		  </div>
+		</div>
+
+
+        <!-- 20151113 豆子游戏 begin -->
+        <div class="contentadBox_right">
+            <!-- AFP两段式代码-公用代码 -->
+			<script type="text/javascript" src="http://s.csbew.com/k.js"></script>
+            <!-- 112411：通发-内-右侧-豆子 类型：固定广告位 尺寸：300x250-->
+			<span style="overflow: visible; position: relative; display: block; width: 300px; height: 250px; border: 0px; text-align: left; background: none;"><span style="overflow: hidden; position: absolute; display: block; width: 300px; height: 250px; border: 0px; text-align: left; background: none;"><span style="overflow: hidden; position: absolute; display: block; width: 300px; height: 250px; border: 0px; text-align: left; background: none;"><a href="http://afptrack.csbew.com/clk?bid=0a67349c000057285f70105704ee5b33&amp;pid=mm_113716014_12970037_52772602&amp;cid=2482&amp;mid=3264&amp;oid=376&amp;productType=1&amp;target=http%3A%2F%2Fqp.gmw.cn%2Fgmw%2Findex_contentright.do" target="_blank" style="position: absolute; display: block; top: 0px; left: 0px; margin: 0px; padding: 0px; width: 300px; height: 250px; text-decoration: none; opacity: 0; z-index: 1; cursor: pointer; background: rgb(255, 255, 255);"></a><img id="ac_cs_112411_1" border="0" src="http://afp.alicdn.com/afp-creative/creative/u113716014/f023560c173b8bf7ab025326009e39d6.jpg" style="width: 300px; height: 250px;"></span></span></span><ins id="ac_js86_112411" style="display: none;"></ins><script type="text/javascript">
+            _acK({aid:112411,format:0,mode:1,gid:1,serverbaseurl:"afp.csbew.com/"});
+            </script><script type="text/javascript">
+ac_as_id = 112411;
+window.afp_cur_query="?pv=1&sp=112411,1,0,0,0,1,1,21&ec=UTF-8&re=1280,800&jsv=7&cb=3318938015&seq=4&fs=1";ac_format = 0;
+ac_mode = 1;
+window.__trans__112411 = true;
+ac_group_id = 1;
+ac_server_base_url = "afpeng.csbew.com/";
+</script>
+<script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/k.js"></script><script></script><script type="text/javascript" src="http://afpeng.csbew.com/ex?a=112411&amp;sp=1&amp;cb=_acM.r&amp;u=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;ds=1280x800&amp;_=1462263664979&amp;fs=1&amp;pvid=fcfcc423c29f02e622de68773c4e95a9&amp;cg=ac683cb997e5b7a560fb7b963f073ab9&amp;from_csbew=1" id="ac_js86_$9702609364"></script>
+
+        </div>
+        <!-- 20151113 豆子游戏 end -->
+
+		<!-- 右侧Tab1 社会 博客 专题-->
+		<div class="contentColumnRight">
+			<ul id="contentTabs_right01" class="navy14">
+				<li><a href="javascript:;" class="current">光明图片库</a></li>
+				<li><a href="javascript:;" style=" border-right:none;" class="">纪　实</a></li>
+			</ul>
+			<div class="clear"></div>
+			<ul id="contentOutput_right01">
+				<li style="display: list-item;"><div class="contentBoxRight black12">
+				  <div class="contentPicBox"><a atremote="" href="http://pic.gmw.cn/cameramanplay/489888/4297368/0.html" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160503/448a5ba8f885189240e408.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://pic.gmw.cn/cameramanplay/489888/4297368/0.html" target="_blank">“儿子娃娃”民族摔跤赛</a></div><div class="contentPicBox"><a atremote="" href="http://pic.gmw.cn/cameramanplay/2129379/4297365/0.html" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160503/448a5ba8f8851892406c07.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://pic.gmw.cn/cameramanplay/2129379/4297365/0.html" target="_blank">从江画里古村落</a></div><div class="contentPicBox"><a atremote="" href="http://pic.gmw.cn/cameramanplay/214866/4298354/0.html" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160503/448a5ba8f88518923fe506.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://pic.gmw.cn/cameramanplay/214866/4298354/0.html" target="_blank">民俗展演丰富农民生活</a></div><div class="contentPicBox"><a atremote="" href="http://pic.gmw.cn/cameramanplay/328851/4298372/0.html" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160503/448a5ba8f88518923f0f05.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://pic.gmw.cn/cameramanplay/328851/4298372/0.html" target="_blank">高速堵车 车主散步</a></div>
+				</div>
+				</li>
+				<li style="display: none;"><div class="contentBoxRight black12">
+					<div class="contentPicBox"><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855401.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160426/0023ae6686b2188904e93a.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855401.htm" target="_blank">梅葆玖表演踩空鞠躬接着演</a></div><div class="contentPicBox"><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855367.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160426/0023ae6686b21889048335.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855367.htm" target="_blank">揭秘平型关战役</a></div><div class="contentPicBox"><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855335.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160426/0023ae6686b21889043330.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855335.htm" target="_blank">长津湖战役：过于残酷</a></div><div class="contentPicBox"><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855240.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160426/0023ae6686b2188903da29.jpg" width="140" height="100" border="0"></a><br><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19855240.htm" target="_blank">张学良回应不抵抗将军之名</a></div>
+					</div>
+				</li>
+			</ul>
+			<!--右侧Tab1-->
+			<script language="javascript">
+					$(document).ready(function() {
+						$.featureList(
+							$("#contentTabs_right01 li a"),
+							$("#contentOutput_right01 li"), {
+								start_item:0
+							}
+						);
+						/*
+						// Alternative
+						$('#tabs li a').featureList({
+							output			:	'#output li',
+							start_item		:	1
+						});
+						*/
+					});
+				</script>
+		</div>
+		<!--右侧Tab2 排行榜-->
+		<div class="contentColumnRight">
+			<ul id="contentTabs_right02" class="navy14">
+				<li><a href="javascript:;" class="current">48小时点击排行</a></li>
+				<li><a href="javascript:;" style=" border-right:none;" class="">热点话题排行</a></li>
+			</ul>
+			<div class="clear"></div>
+			<ul id="contentOutput_right02" class="black12">
+				<li style="display: list-item;">
+					<div class="contentBoxRight rankRight">
+					<p><span class="r1">01</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19767667.htm" target="_blank">黑养生馆称洗脚水治百病 大爷大妈排队喝</a></span><span class="clickRate"></span>
+					</p>
+					<p><span class="r1">02</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19762685.htm" target="_blank">面包车高速上爆胎失控 3人被甩飞2人身亡</a></span><span class="clickRate"></span></p>
+					<p><span class="r1">03</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19762394.htm" target="_blank">媳妇比妈小1岁遭全家反对 母亲给儿子下跪</a></span><span class="clickRate"></span></p>
+					<p><span class="r2">04</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19761303.htm" target="_blank">男子招嫖后嫌服务不周 报警“维权”</a></span><span class="clickRate"></span></p>
+					<p><span class="r2">05</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19760979.htm" target="_blank">大学生宿舍产子身亡 前一晚如厕支开同学</a></span><span class="clickRate"></span></p>
+					<p><span class="r2">06</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19760831.htm" target="_blank">实拍女子当街脱光质问男子 我和她谁好看</a></span><span class="clickRate"></span></p>
+					<p><span class="r2">07</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19760800.htm" target="_blank">女子勒死情人雇的哥背其尸体下楼</a></span><span class="clickRate"></span></p>
+					<p><span class="r2">08</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19760709.htm" target="_blank">专车接送招嫖民警一锅端 四男女被捉现行</a></span><span class="clickRate"></span></p>
+					<p><span class="r2">09</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19760013.htm" target="_blank">老太做场小手术 清单标明用上千袋注射液</a></span><span class="clickRate"></span></p>
+					<p style="border:none;"><span class="r2">10</span>
+					  <span class="rankRightTit"><a atremote="" href="http://legal.gmw.cn/2016-04/19/content_19760209.htm" target="_blank">千万富翁为减压提神 邀情人冰妹家中吸毒</a></span><span class="clickRate"></span></p>
+				  </div>
+				</li>
+				<li style="display: none;">
+					<div class="contentBoxRight rankRight">
+					<p><span class="r1">01</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596855-1-1.html" target="_blank">强拉女大学生上车，街痞咋当上纪委书记</a></span>
+					</p>
+					<p><span class="r1">02</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596880-1-1.html" target="_blank">保安撞狗事件 爱狗没错但要守法</a></span>
+					</p>
+					<p><span class="r1">03</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596883-1-1.html" target="_blank">免费蹭网应成政府办事窗口的“标配”</a></span>
+					</p>
+					<p><span class="r2">04</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596893-1-1.html" target="_blank">乘客被打只赔3元呼唤专车须严管</a></span>
+					</p>
+					<p><span class="r2">05</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596894-1-1.html" target="_blank">毕业生求职奇葩被拒不见得是坏事</a></span>
+					</p>
+					<p><span class="r2">06</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596897-1-1.html" target="_blank">00后女孩将产子争议仅是情何以堪</a></span>
+					</p>
+					<p><span class="r2">07</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596941-1-1.html" target="_blank">创新创业专业，应争取“安居乐业”</a></span>
+					</p>
+					<p><span class="r2">08</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596946-1-1.html" target="_blank">抓好信访工作，凝聚建设美好中国强大力量</a></span>
+					</p>
+					<p><span class="r2">09</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596995-1-1.html" target="_blank">精准兜底扶贫 把好“最后一道保障线”</a></span>
+					</p>
+					<p style="border:none;"><span class="r2">10</span>
+					  <span class="rankRightTit" style="width:275px"><a atremote="" href="http://bbs.gmw.cn/thread-3596960-1-1.html" target="_blank">“穿牛仔裤毁灭未来”，能再夸张点儿吗</a></span>
+					</p>
+				  </div>
+				</li>
+			</ul>
+			<!--右侧Tab2-->
+			<script language="javascript">
+					$(document).ready(function() {
+						$.featureList(
+							$("#contentTabs_right02 li a"),
+							$("#contentOutput_right02 li"), {
+								start_item:0
+							}
+						);
+						/*
+						// Alternative
+						$('#tabs li a').featureList({
+							output			:	'#output li',
+							start_item		:	1
+						});
+						*/
+					});
+				</script>
+		</div>
+		<!--军事广角-->
+		<div class="contentColumnRight black12">
+			<div class="contentTitBarRight">军事广角</div>
+		  <div class="contentPicTxt_right">
+		    <a atremote="" href="http://mil.gmw.cn/2016-04/29/content_19903094.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160429/bc305bc987e9188cfffc35.jpg" border="0" width="120" height="85" style="margin:5px 5px 0 5px;"></a>
+		  <p class="black12">
+		    ·<a href="http://mil.gmw.cn/2016-04/29/content_19903094.htm" target="_blank">越南女兵新式军服靓照</a><br>·<a href="http://mil.gmw.cn/2016-04/11/content_19660952.htm" target="_blank">俯瞰中国“野牛”登陆</a><br>·<a href="http://mil.gmw.cn/2016-03/25/content_19438324.htm" target="_blank">空警500预警机侧面照曝光</a><br>·<a href="http://mil.gmw.cn/2016-03/25/content_19438207.htm" target="_blank">辽宁舰航母最新全貌曝光</a><br>
+		  </p>
+            <div class="clear" style="height:10px;"></div>
+            <a atremote="" href="http://mil.gmw.cn/2016-03/17/content_19321633.htm" target="_blank"><img atremote="" src="http://imgnews.gmw.cn/attachement/jpg/site2/20160317/bc305baebed81854485f56.jpg" border="0" width="120" height="85" style="margin:5px 5px 0 5px;"></a>
+		  <p class="black12">
+		    ·<a href="http://mil.gmw.cn/2016-03/17/content_19321633.htm" target="_blank">中国新建海警船美照</a><br>·<a href="http://mil.gmw.cn/2016-03/24/content_19422404.htm" target="_blank">A4腰？听听空军女神怎么说</a><br>·<a href="http://mil.gmw.cn/2016-02/16/content_18891863.htm" target="_blank">美军航母潜艇烤肉大会</a><br>·<a href="http://mil.gmw.cn/2015-12/05/content_17975608.htm" target="_blank">十大最失败的军事发明</a><br>
+		  </p>
+		  </div>
+		<div class="clear"></div>
+		</div>
+
+		<!--看点·追踪-->
+		<div class="contentColumnRight">
+			<div class="contentTitBarRight">看点·追踪</div>
+			<div class="contentPicTxt_right">
+				<div class="contentPicTxt_right" style="padding:10px 10px 0;">
+					<strong class="black12"><a atremote="" href="http://politics.gmw.cn/2016-04/26/content_19852375.htm" target="_blank">工信部拟取消手机漫游费</a></strong><p><span class="grey12_6">　　工信部官方微博“工信微报”回应，工信部将根据国家区域发展战略规划，推动企业逐步取消区域内手机漫游费。</span></p></div>
+				<div class="line_dotted"></div>
+				<p class="black12">
+					<a atremote="" href="http://politics.gmw.cn/2016-04/12/content_19666715.htm"><font color="#333399">【国子监错别字】</font>缘何挂了10年？</a><br><a atremote="" href="http://politics.gmw.cn/2016-04/12/content_19666657.htm"><font color="#333399">【自愿退休】</font><font color="black">干部</font>"上能下"需自请"退"</a><br><a atremote="" href="http://politics.gmw.cn/2016-02/24/content_19010232.htm"><font color="#333399">【职业打假人】</font>维权效益不宜高估</a><br><a atremote="" href="http://politics.gmw.cn/2016-02/24/content_19010225.htm"><font color="#333399">【给孩子请假】</font>莫成“向学校逼假”</a><br><a atremote="" href="http://politics.gmw.cn/2016-02/24/content_19010202.htm"><font color="#333399">【推广街区制】</font>是楼市去库存利器？</a><br>
+				</p>
+		</div>
+		</div>
+	</div>
+	<div class="clear"></div>
+</div>
+
+<div class="channel-mobileFooter noDesktop">
+	<p><a href="http://wap.gmw.cn/">WAP版</a>|<a href="http://m.gmw.cn/">触屏版</a></p>
+	<p>光明网版权所有</p>
+</div>
+<div class="noMobile">
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<div class="clear"></div>
+	<div class="footLine"></div>
+	<div class="black12" style="margin:11px auto 28px;padding:0;text-align:center;">
+		<p style="line-height:30px;height:30px;"><a href="http://www.gmw.cn/node_21441.htm">光明日报社概况</a> | <a href="http://www.gmw.cn/aboutus.htm">关于光明网</a> | <a href="http://www.gmw.cn/content/node_8926.htm">报网动态</a> | <a href="http://www.gmw.cn/node_46280.htm">联系我们</a> | <a href="http://www.gmw.cn/node_46279.htm">法律声明</a> | <a href="http://www.gmw.cn/gm/">光明员工</a> | <a href="http://mail.gmw.cn/">光明网邮箱</a> | <a href="http://www.gmw.cn/map.htm">网站地图</a></p>
+		<p style="line-height:30px;height:30px;">光明网版权所有</p>
+	</div>
+	<div id="thistime" style="display:none">
+		<script type="text/javascript" src="http://img.gmw.cn/js/haf_gmw_2013.js"></script>
+	</div>
+	<!-- 天润 统计 -->
+<script type="text/javascript">document.write(unescape("%3Cscript src='http://cl.webterren.com/webdig.js?z=7' type='text/javascript'%3E%3C/script%3E"));</script><script src="http://cl.webterren.com/webdig.js?z=7" type="text/javascript"></script>
+<script type="text/javascript">wd_paramtracker("_wdxid=000000000000000000000000000000000000000000")</script>
+<!-- 谷歌 统计 -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-20947729-1', 'auto');
+  ga('require', 'displayfeatures');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+_atrk_opts = { atrk_acct:"4+gli1aUCm00OA", domain:"gmw.cn",dynamic: true};
+(function() { var as = document.createElement('script'); as.type = 'text/javascript'; as.async = true; as.src = "https://d31qbv1cthcecs.cloudfront.net/atrk.js"; var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(as, s); })();
+</script>
+<noscript>&lt;img src="https://d5nxst8fruw4z.cloudfront.net/atrk.gif?account=4+gli1aUCm00OA" style="display:none" height="1" width="1" alt="" /&gt;</noscript>
+
+</div>
+
+<!-- 20160428 mail form pengbo -->
+<!-- AFP两段式代码-公用代码 -->
+<script type="text/javascript" src="http://afpmm.alicdn.com/g/mm/afp-cdn/JS/k.js"></script>
+
+
+<!-- 52772462：人才-内-0像素 类型：固定 尺寸：0x1-->
+<ins id="ac_js86_mm_113716014_12970037_52772462" style="display: none;"></ins><script type="text/javascript">
+_acM({aid:"mm_113716014_12970037_52772462",format:1,mode:1,gid:1,serverbaseurl:"afpeng.alimama.com/"});
+</script><script></script><script type="text/javascript" src="http://afpeng.alimama.com/ex?a=mm_113716014_12970037_52772462&amp;sp=1&amp;cb=_acM.r&amp;u=http%3A%2F%2Fnews.gmw.cn%2F2016-04%2F14%2Fcontent_19695837.htm&amp;ds=1280x800&amp;_=1462263665281&amp;fs=5&amp;pvid=abbdea1ee539c207a7e21f64a302005f&amp;cg=b7aea31bef5e4a382a27c8fe3135566d" id="ac_js86_$1971834805"></script><script type="text/javascript">document.write(unescape("%3Cscript src='http://img.gmw.cn/js/market/mooncake_final.js' type='text/javascript'%3E%3C/script%3E"));</script><script src="http://img.gmw.cn/js/market/mooncake_final.js" type="text/javascript"></script>
+
+
+<audio controls="controls" style="display: none;"></audio><iframe src="http://www.gmw.cn/ad/world_content_float_0x0_52768431.html" width="0" height="0" scrolling="no" frameborder="0"></iframe><div id="bsBox" class="bsBox"><div class="bsClose">X</div><div class="bsTop"><div class="bsReturn">选择其他平台 &gt;&gt;</div><span style="margin-left:15px;">分享到</span><span class="bsPlatName"></span></div><div class="bsFrameDiv"><iframe class="bShareFrame" name="bsFrame705" frameborder="0" scrolling="no" allowtransparency="true"></iframe></div><div id="bsMorePanel" style="display: none;"></div></div><div id="ads"></div><div id="bsPanelHolder"><div id="bsPanel" style="display:none;"><div class="bsTitle"><a style="float:left;height:20px;line-height:20px;font-weight:bold;" class="bsSiteLink" target="_blank" href="http://www.bshare.cn/intro">分享到</a><a class="bsSiteLink" style="cursor:pointer;float:right;height:20px;line-height:20px;font-weight:bold;" onclick="document.getElementById('bsPanel').style.display='none';">X</a><div class="bsClear"></div></div><div class="bsClear"></div><div style="padding-left:8px;background:#fff;*height:244px;"><div style="height:47px;border-bottom:1px #ccc solid;padding:4px 0 4px 16px;margin-right:8px;_padding-left:12px;"><div class="bsRlogo" onmouseover="javascript:this.className='bsRlogoSel'" onmouseout="javascript:this.className='bsRlogo'"><a href="javascript:;" onclick="javascript:bShare.share(event,'qqmb');return false;" style="text-decoration:none;line-height:120%;"><div style="cursor:pointer;width:24px;height:24px;margin:0 18px 2px;background:url(http://static.bshare.cn/frame/images//logos/m2/qqmb.gif) no-repeat;"></div><div style="cursor:pointer;text-align:center;width:60px;height:16px !important;overflow:hidden;color:inherit;white-space:nowrap;line-height:120% !important">腾讯微博</div></a></div><div class="bsRlogo" onmouseover="javascript:this.className='bsRlogoSel'" onmouseout="javascript:this.className='bsRlogo'"><a href="javascript:;" onclick="javascript:bShare.share(event,'gmweibo');return false;" style="text-decoration:none;line-height:120%;"><div style="cursor:pointer;width:24px;height:24px;margin:0 18px 2px;background:url(http://static.bshare.cn/frame/images//logos/m2/gmweibo.gif) no-repeat;"></div><div style="cursor:pointer;text-align:center;width:60px;height:16px !important;overflow:hidden;color:inherit;white-space:nowrap;line-height:120% !important">光明微博</div></a></div><div class="bsRlogo" onmouseover="javascript:this.className='bsRlogoSel'" onmouseout="javascript:this.className='bsRlogo'"><a href="javascript:;" onclick="javascript:bShare.share(event,'facebook');return false;" style="text-decoration:none;line-height:120%;"><div style="cursor:pointer;width:24px;height:24px;margin:0 18px 2px;background:url(http://static.bshare.cn/frame/images//logos/m2/facebook.gif) no-repeat;"></div><div style="cursor:pointer;text-align:center;width:60px;height:16px !important;overflow:hidden;color:inherit;white-space:nowrap;line-height:120% !important">Facebook</div></a></div></div><div class="bsLogoLink"><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="一键通" onclick="javascript:bShare.share(event,'bsharesync');return false;" style="color:red;background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -288px;">一键通</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="QQ空间" onclick="javascript:bShare.share(event,'qzone');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1566px;">QQ空间</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="搜狐微博" onclick="javascript:bShare.share(event,'sohuminiblog');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1800px;">搜狐微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="新华微博" onclick="javascript:bShare.share(event,'xinhuamb');return false;" style="color:red;background:url(http://static.bshare.cn/frame/images//logos/s4/xinhuamb.png) no-repeat;">新华微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="手机" onclick="javascript:bShare.share(event,'shouji');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1710px;">手机</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="网易微博" onclick="javascript:bShare.share(event,'neteasemb');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1332px;">网易微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="开心网" onclick="javascript:bShare.share(event,'kaixin001');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1008px;">开心网</a></div></div><div class="bsLogoLink"><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="新浪微博" onclick="javascript:bShare.share(event,'sinaminiblog');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1728px;">新浪微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="手机快传" onclick="javascript:bShare.share(event,'189share');return false;" style="width:48px;background:url(http://static.bshare.cn/frame/images//logos/s4/189share.png) no-repeat;">手机快传</a><div class="bsPopupAwd">奖</div></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="人人网" onclick="javascript:bShare.share(event,'renren');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1674px;">人人网</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="天涯" onclick="javascript:bShare.share(event,'tianya');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1890px;">天涯</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="凤凰微博" onclick="javascript:bShare.share(event,'ifengmb');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -918px;">凤凰微博</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="朋友网" onclick="javascript:bShare.share(event,'qqxiaoyou');return false;" style="background:url(http://static.bshare.cn/frame/images//slogos_sprite8.png) no-repeat 0 -1548px;">朋友网</a></div><div class="bsLogo" onmouseover="javascript:this.className='bsLogoSel'" onmouseout="javascript:this.className='bsLogo'"><a href="javascript:;" title="微信" onclick="javascript:bShare.share(event,'weixin');return false;" style="background:url(http://static.bshare.cn/frame/images//logos/s4/weixin.png) no-repeat;">微信</a></div></div><div class="bsClear"></div></div><div style="height:20px;line-height:20px;padding:0 8px;border-top:1px solid #e8e8e8;color:#666;background:#f2f2f2;"><div class="buzzButton" style="float:left;">更多平台... <font style="font-weight:normal;">(133)</font></div><div id="bsPower" style="float:right;text-align:right;overflow:hidden;height:100%;"><a class="bsSiteLink" style="font-size:10px;vertical-align:text-bottom;line-height:24px;cursor:pointer;" href="http://www.bshare.cn" target="_blank"><span style="font-size:10px;vertical-align:text-bottom;"><span style="color:#f60;">b</span>Share</span></a></div></div></div></div></body><style type="text/css">#yddContainer{display:block;font-family:Microsoft YaHei;position:relative;width:100%;height:100%;top:-4px;left:-4px;font-size:12px;border:1px solid}#yddTop{display:block;height:22px}#yddTopBorderlr{display:block;position:static;height:17px;padding:2px 28px;line-height:17px;font-size:12px;color:#5079bb;font-weight:bold;border-style:none solid;border-width:1px}#yddTopBorderlr .ydd-sp{position:absolute;top:2px;height:0;overflow:hidden}.ydd-icon{left:5px;width:17px;padding:0px 0px 0px 0px;padding-top:17px;background-position:-16px -44px}.ydd-close{right:5px;width:16px;padding-top:16px;background-position:left -44px}#yddKeyTitle{float:left;text-decoration:none}#yddMiddle{display:block;margin-bottom:10px}.ydd-tabs{display:block;margin:5px 0;padding:0 5px;height:18px;border-bottom:1px solid}.ydd-tab{display:block;float:left;height:18px;margin:0 5px -1px 0;padding:0 4px;line-height:18px;border:1px solid;border-bottom:none}.ydd-trans-container{display:block;line-height:160%}.ydd-trans-container a{text-decoration:none;}#yddBottom{position:absolute;bottom:0;left:0;width:100%;height:22px;line-height:22px;overflow:hidden;background-position:left -22px}.ydd-padding010{padding:0 10px}#yddWrapper{color:#252525;z-index:10001;background:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ab20.png);}#yddContainer{background:#fff;border-color:#4b7598}#yddTopBorderlr{border-color:#f0f8fc}#yddWrapper .ydd-sp{background-image:url(chrome-extension://eopjamdnofihpioajgfdikhhbobonhbb/ydd-sprite.png)}#yddWrapper a,#yddWrapper a:hover,#yddWrapper a:visited{color:#50799b}#yddWrapper .ydd-tabs{color:#959595}.ydd-tabs,.ydd-tab{background:#fff;border-color:#d5e7f3}#yddBottom{color:#363636}#yddWrapper{min-width:250px;max-width:400px;}</style></html>'''
+
 if __name__ == "__main__":
-    new = NewsParse(getHtml(), 'http://finance.sina.com.cn/roll/2016-04-04/doc-ifxqxcnz9093681.shtml')
+    new = NewsParse(getHtml5(), 'http://news.gmw.cn/2016-04/14/content_19695837.htm')
     print new.get_url()
     print new.get_content()
     print new.get_title()

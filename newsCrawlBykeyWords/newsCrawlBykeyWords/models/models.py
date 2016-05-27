@@ -55,14 +55,15 @@ class NewsHandler(BaseModels):
             title = item['title']
             dateline = item['dateline']
             source = item['source']
-            return (url_md5, url, title, dateline, source)
+            content = item['content']
+            return (url_md5, url, title, dateline, source, content)
 
         if isinstance(items, NewsItem):
-            cur.execute('''insert into news(`url_md5`, `url`, `title`,`dateline`,`source`)
-                           values(%s,%s,%s,%s,%s)''', get_values(items))
+            cur.execute('''insert into news(`url_md5`, `url`, `title`,`dateline`,`source`,`content`)
+                           values(%s,%s,%s,%s,%s,%s)''', get_values(items))
         else:
-            cur.executemany('''insert into news(`url_md5`, `url`, `title`,`dateline`,`source`)
-                           values(%s,%s,%s,%s,%s)''', [get_values(items) for item in items])
+            cur.executemany('''insert into news(`url_md5`, `url`, `title`,`dateline`,`source`,`content`)
+                           values(%s,%s,%s,%s,%s,%s)''', [get_values(item) for item in items])
         cur.close()
         self.db.commit()
 

@@ -8,6 +8,9 @@ import json
 
 
 def build_inverted_data():
+    '''news_id:weight:dateline:source;news_id:weight:dateline:source;
+    eg 342:0.032134:2012-03-21 12-22-32:NULL
+    '''
     db = BaseModels().get_db()
     cur = db.cursor()
 
@@ -16,26 +19,35 @@ def build_inverted_data():
 
     skip, length = 0, 500
     finished = 0
-    cur.execute("truncate table inverted_index;") # 清空原先的倒排索引
+    cur.execute("truncate table inverted_index ;")  # 清空原先的倒排索引
+    print u'倒排索引清空'
     try:
         while finished != total:
-            affected_rows = cur.execute("select id, content, cut_words from news limit %s,%s", (skip, length))
-            for news_id, content, cut_words in cur.fetchall():
+            affected_rows = cur.execute("select id, dateline, source, content, cut_words from news limit %s,%s",
+                                        (skip, length))
+            for news_id, dateline, source, content, cut_words in cur.fetchall():
                 content = content.decode('utf-8')
+                if dateline:
+                    dateline = dateline.strftime("%Y-%m-%d %H-%M-%S")
+                else:
+                    dateline = "NULL"
+                source = (source or "NULL").decode("utf-8")
                 for word, weight in json.loads(cut_words).iteritems():
-                    position = []
-                    word_length = len(word)
-                    pos = content.find(word)
-                    while pos != -1:
-                        position.append(pos)
-                        pos = content.find(word, pos + word_length)
-                    info = ':'.join([str(news_id), str(weight), '&'.join(map(str, position))])
-
+                    # position = []
+                    # word_length = len(word)
+                    # pos = content.find(word)
+                    # while pos != -1:
+                    #     position.append(pos)
+                    #     pos = content.find(word, pos + word_length)
+                    # info = u':'.join([unicode(news_id), unicode(weight), unicode(dateline), unicode(source),
+                    #                   u'&'.join(map(unicode, position))])
+                    info = u':'.join([unicode(news_id), unicode(weight), unicode(dateline), unicode(source)])
                     cur.execute("select info from inverted_index where word=%s", (word,))
                     tmp = cur.fetchone()
                     # info存在, 需要追加
                     if tmp:
-                        info = ";".join([tmp[0], info])
+                        if tmp[0]:
+                            info = ";".join([unicode(tmp[0], 'utf-8'), info])
                         cur.execute("update inverted_index set info = %s where word = %s", (info, word))
                     # info不存在, 需要添加
                     else:
@@ -65,12 +77,12 @@ def test(word=None):
         info = unicode(info, 'utf-8')
     else:
         word = unicode(word, 'utf-8') if not isinstance(word, unicode) else word
-        cur.execute("select info from inverted_index where word=%s", (word, ))
+        cur.execute("select info from inverted_index where word=%s", (word,))
         info = cur.fetchone()[0]
         info = unicode(info, 'utf-8')
     allNewsLis = []
     for news_info in info.split(u";"):
-        news_id, word_weight, positions = tuple(news_info.split(":"))
+        news_id, word_weight, dateline, source, positions = tuple(news_info.split(":"))
         positions = map(int, positions.split("&"))
         cur.execute("select content from news where id = %s;", (news_id,))
         content = unicode(cur.fetchone()[0], 'utf-8')
@@ -81,7 +93,7 @@ def test(word=None):
         for pos in positions:
             contentLis.append(content[begin:pos])
             contentLis.append("<font color='red'>")
-            contentLis.append(content[pos:pos+word_length])
+            contentLis.append(content[pos:pos + word_length])
             contentLis.append("</font>")
             begin = pos + word_length
         contentLis.append(content[begin:])
@@ -96,6 +108,6 @@ def test(word=None):
 
 
 if __name__ == "__main__":
-    # build_inverted_data()
-    test(u'今日')
-    test(u'乐视')
+    build_inverted_data()
+    # test(u'生态艺术')
+    # test(u'乐视')

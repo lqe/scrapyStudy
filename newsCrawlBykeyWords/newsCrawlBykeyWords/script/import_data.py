@@ -1,6 +1,7 @@
 #coding:utf-8
 import sys
 sys.path.insert(0, '..')
+import re
 import codecs
 from models import BaseModels
 
@@ -12,13 +13,14 @@ total = cur.fetchone()[0]
 
 skip, length = 0, 500
 finished = 0
-f = codecs.open('newsData.txt', 'wb', 'utf-8')
+f = codecs.open('tmp/newsData.txt', 'wb', 'utf-8')
 try:
     while finished != total:
         resNum = cur.execute('''select `url`, `title`, `dateline`,`source`,`content`, `cut_words`
                                 from news
                                 order by `dateline`
                                 Limit %s,%s''', (skip, length))
+
         for url, title, dateline, source, content, cut_words in cur.fetchall():
             tmp = []
             tmp.append(url)
@@ -29,8 +31,8 @@ try:
                 tmp.append("NULL")
             tmp.append(source or "NULL")
             tmp.append(content or "NULL")
-            tmp.append(cut_words or "NULL")
-            f.write(u'\t'.join(ele.decode('utf-8') for ele in tmp)+u"\r\n")
+            # tmp.append(cut_words or "NULL")
+            f.write(u'\t'.join(re.sub(u"[\t\r\n]+", "", ele.decode('utf-8'))  for ele in tmp)+u"\n")
         finished += resNum
         skip = finished
         print "has export news %d, total=%d" % (finished, total)

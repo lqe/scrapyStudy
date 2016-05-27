@@ -43,7 +43,7 @@ def get_unicode(text, is_html=False):
     try: return text.decode(encoding)
     except: pass
 
-    if encoding.startswith('gb'):
+    if encoding.lower().startswith('gb'):
         try: return text.decode('gbk')
         except: pass
 

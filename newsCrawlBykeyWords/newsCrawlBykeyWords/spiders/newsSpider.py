@@ -18,7 +18,7 @@ class NewsSpider(scrapy.spiders.Spider):
 
     def __init__(self, name=None, **kwargs):
         super(NewsSpider, self).__init__(name, **kwargs)
-        self.maxNewsNum = 1
+        self.maxNewsNum = 4000
         self.newsNum = 0
 
     def start_requests(self):
@@ -40,7 +40,9 @@ class NewsSpider(scrapy.spiders.Spider):
     def parse(self, response):
         ctx = scrapy.Selector(response)
         singleNew = ctx.xpath("//div[@class='result'][@id]")
+        need_crawl_next_page = False  # 如果本页面的所有新闻都抓取过, 则停止抓取后续页的新闻
         for sel in singleNew:
+            url = sel.xpath(".//a[@href][1]/@href").extract()[0]
             try:
                 tmp = sel.xpath(".//p[@class='c-author']/text()").extract()[0].split(u"\xa0\xa0")
                 source = tmp[0]
@@ -48,14 +50,20 @@ class NewsSpider(scrapy.spiders.Spider):
             except:
                 source, dateline = None, None
             title = ''.join(sel.xpath(".//a[@href][1]//text()").extract())
-            url = sel.xpath(".//a[@href][1]/@href").extract()[0]
-            req = scrapy.Request(url, callback=self.newsParse, meta={"title": title,
-                                                                     "dateline": dateline,
-                                                                     "source": source})
-            yield self.genRequest(req)
-            for next_url in ctx.xpath("//p[@id='page']/a[@href][position()>1][@class]/@href").extract():
-                req = scrapy.Request('http://news.baidu.com' + next_url, callback=self.parse)
-                yield self.genRequest(req, news=False)
+            request = scrapy.Request(url,
+                                     callback=self.newsParse,
+                                     meta={"title": title, "dateline": dateline, "source": source})
+            request = self.genRequest(request)
+            if request:
+                need_crawl_next_page = True
+                yield request
+        next_page = ctx.xpath("//p[@id='page']/a[@href][position()>1][@class]/@href").extract()
+        if need_crawl_next_page or next_page:
+            next_url = next_page[0]
+            request = scrapy.Request('http://news.baidu.com' + next_url, callback=self.parse)
+            request = self.genRequest(request, news=False)
+            if request:
+                yield request
 
     def newsParse(self, response):
         url, meta = response.url, response.meta
@@ -69,7 +77,7 @@ class NewsSpider(scrapy.spiders.Spider):
         kw["title"] = news_parse.get_title()
         kw["dateline"] = news_parse.get_dateline()
         kw["source"] = news_parse.get_source()
-        kw["content"]  = news_parse.get_content()
+        kw["content"] = news_parse.get_content()
         return NewsItem.createNewItem(**kw)
 
     def genRequest(self, request, news=True):
@@ -81,4 +89,5 @@ class NewsSpider(scrapy.spiders.Spider):
             return None
         if news:
             self.newsNum += 1
+            print self.newsNum
         return request
